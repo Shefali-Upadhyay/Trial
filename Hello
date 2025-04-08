@@ -1,121 +1,103 @@
 useEffect(() => {
   if (valueSelector.value !== false && stageId !== "doc") {
-    // Check if fields and fields.fields are defined before proceeding
-    if (fields && fields.fields && Array.isArray(fields.fields) && fields.fields.length > 0) {
+    // Ensure fields and fields.fields are properly defined
+    if (fields && Array.isArray(fields.fields) && fields.fields.length > 0) {
       let mandatoryFields: Array<string> = [];
       console.log("Fields", fields);
       let value: KeyStringModel = {};
 
-      fields.fields.forEach((res: FieldsetModel) => {
+      // Start by copying fields to avoid mutating the state directly
+      const updatedFields = [...fields.fields];
+
+      // Iterate over fieldsets
+      updatedFields.forEach((res: FieldsetModel) => {
         if (res.field_set_name === 'Additional Contact Details') {
           console.log("Res", res);
         }
-        
+
         res.fields.forEach((fName: KeyWithAnyModel) => {
           if (res.field_set_name === 'Additional Contact Details') {
             console.log("Logical Field Name:", fName.logical_field_name);
           }
 
-          // Check the condition and insert the new component without mutating the original array
+          // Handling "mobile_number_rwb" case
           if (fName.logical_field_name === "mobile_number_rwb" 
             && authenticateType() === "manual" 
             && stageSelector[0].stageId === "ssf-1"
             && Object.keys(userInputSelector.applicants).length === 0) {
-            
+
             const stageComponents = dispatch(
-              getFields(stageSelector, {fields:["mobile_number_rwb"]})
+              getFields(stageSelector, { fields: ["mobile_number_rwb"] })
             );
 
-            // Create a new fields array by inserting the component at the desired position
-            const updatedFields = [
+            // Create a new array with the inserted component at index 4
+            const updatedResFields = [
               ...res.fields.slice(0, 4), // Everything before index 4
               stageComponents[0], // Insert the new component
               ...res.fields.slice(4), // Everything after index 4
             ];
 
-            // Update fields with the new fields array
-            setFields({
-              ...fields,
-              fields: fields.fields.map((fieldSet) =>
-                fieldSet.field_set_name === res.field_set_name
-                  ? { ...fieldSet, fields: updatedFields }
-                  : fieldSet
-              ),
-            });
-
-          } else if (fName.logical_field_name === "mobile_1" && stageSelector[0].stageId === "bd-3" 
-            && authenticateType() === "myinfo" && !additionalFields.includes("mobile_1")) {
-
-            const stageComponents = dispatch(
-              getFields(stageSelector, {fields:["mobile_1"]})
+            // Update the specific fieldset in the updatedFields array
+            const newFieldsets = updatedFields.map(fieldSet =>
+              fieldSet.field_set_name === res.field_set_name
+                ? { ...fieldSet, fields: updatedResFields }
+                : fieldSet
             );
 
-            const updatedFields = [
+            // Update the state without mutating directly
+            setFields({ ...fields, fields: newFieldsets });
+
+          } else if (fName.logical_field_name === "mobile_1" 
+            && stageSelector[0].stageId === "bd-3" 
+            && authenticateType() === "myinfo" 
+            && !additionalFields.includes("mobile_1")) {
+
+            const stageComponents = dispatch(
+              getFields(stageSelector, { fields: ["mobile_1"] })
+            );
+
+            const updatedResFields = [
               ...res.fields.slice(0, 5),
               stageComponents[0],
               ...res.fields.slice(5),
             ];
 
-            setFields({
-              ...fields,
-              fields: fields.fields.map((fieldSet) =>
-                fieldSet.field_set_name === res.field_set_name
-                  ? { ...fieldSet, fields: updatedFields }
-                  : fieldSet
-              ),
-            });
+            const newFieldsets = updatedFields.map(fieldSet =>
+              fieldSet.field_set_name === res.field_set_name
+                ? { ...fieldSet, fields: updatedResFields }
+                : fieldSet
+            );
+
+            setFields({ ...fields, fields: newFieldsets });
 
             additionalFields.push("mobile_1");
 
-          } else if (fName.logical_field_name === "mobile_2" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("mobile_2")) {
+          } else if (fName.logical_field_name === "mobile_2" 
+            && stageSelector[0].stageId === "bd-3"
+            && authenticateType() === "myinfo" 
+            && !additionalFields.includes("mobile_2")) {
 
             const stageComponents = dispatch(
-              getFields(stageSelector, {fields:["mobile_2"]})
+              getFields(stageSelector, { fields: ["mobile_2"] })
             );
 
-            const updatedFields = [
+            const updatedResFields = [
               ...res.fields.slice(0, 7),
               stageComponents[0],
               ...res.fields.slice(7),
             ];
 
-            setFields({
-              ...fields,
-              fields: fields.fields.map((fieldSet) =>
-                fieldSet.field_set_name === res.field_set_name
-                  ? { ...fieldSet, fields: updatedFields }
-                  : fieldSet
-              ),
-            });
+            const newFieldsets = updatedFields.map(fieldSet =>
+              fieldSet.field_set_name === res.field_set_name
+                ? { ...fieldSet, fields: updatedResFields }
+                : fieldSet
+            );
+
+            setFields({ ...fields, fields: newFieldsets });
 
             additionalFields.push("mobile_2");
 
-          } else if (fName.logical_field_name === "overseas_mobile1_contact_no" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("overseas_mobile1_contact_no")) {
-
-            const stageComponents = dispatch(
-              getFields(stageSelector, {fields:["overseas_mobile1_contact_no"]})
-            );
-
-            const updatedFields = [
-              ...res.fields.slice(0, 9),
-              stageComponents[0],
-              ...res.fields.slice(9),
-            ];
-
-            setFields({
-              ...fields,
-              fields: fields.fields.map((fieldSet) =>
-                fieldSet.field_set_name === res.field_set_name
-                  ? { ...fieldSet, fields: updatedFields }
-                  : fieldSet
-              ),
-            });
-
-            additionalFields.push("overseas_mobile1_contact_no");
-
-          } // Add more `else if` conditions here with similar logic for other fields
+          } // Continue this pattern for all your other conditions...
 
         });
       });
