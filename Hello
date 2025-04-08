@@ -1,6 +1,7 @@
 useEffect(() => {
   if (valueSelector.value !== false && stageId !== "doc") {
-    if (fields && fields["fields"] && fields["fields"].length > 0) {
+    // Check if fields and fields.fields are defined before proceeding
+    if (fields && fields.fields && Array.isArray(fields.fields) && fields.fields.length > 0) {
       let mandatoryFields: Array<string> = [];
       console.log("Fields", fields);
       let value: KeyStringModel = {};
