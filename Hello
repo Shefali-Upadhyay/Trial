@@ -1,279 +1,173 @@
-  useEffect(() => {
-    if (valueSelector.value !== false && stageId !== "doc") {
-      if (fields && fields["fields"] && fields["fields"].length > 0) {
-        let mandatoryFields: Array<string> = [];
-        console.log("Fields", fields)
-        if(banckaMandatory) {
-          mandatoryFields = Object.keys(banckaMandatory);
+useEffect(() => {
+  if (valueSelector.value !== false && stageId !== "doc") {
+    if (fields && fields["fields"] && fields["fields"].length > 0) {
+      let mandatoryFields: Array<string> = [];
+      console.log("Fields", fields);
+      
+      if (banckaMandatory) {
+        mandatoryFields = Object.keys(banckaMandatory);
+      }
+      
+      let value: KeyStringModel = {};
+      const updatedFields = [...fields.fields]; // Create a copy of fields array
+      
+      updatedFields.forEach((res: FieldsetModel) => {
+        if (res.field_set_name === 'Additional Contact Details') {
+          console.log("Res", res);
         }
-        let value: KeyStringModel = {};
-        fields.fields.forEach((res: FieldsetModel) => {
-          if(res.field_set_name ==='Additional Contact Details'){
-            console.log("Res", res)
+        
+        res.fields.forEach((fName: KeyWithAnyModel) => {
+          if (res.field_set_name === 'Additional Contact Details') {
+            console.log("Logical Field Name:", fName.logical_field_name);
           }
-          res.fields.forEach((fName: KeyWithAnyModel) => {
-            if(res.field_set_name ==='Additional Contact Details'){
-              console.log("Logical Field Name:", fName.logical_field_name)
-            }
+
+          if (fName.mandatory === "Yes" && fName.logical_field_name !== "see_other_myInfo_details") {
+            let logicalFieldVal = stageSelector[0].stageInfo.applicants[
+              fName.logical_field_name + "_a_1"
+            ];
+            
             if (
-              fName.mandatory === "Yes" &&
-              fName.logical_field_name !== "see_other_myInfo_details"
+              (!logicalFieldVal && 
+                fName.logical_field_name === "embossed_name" &&
+                new RegExp(fName.regex).test(stageSelector[0].stageInfo.applicants["full_name_a_1"]) &&
+                (stage.stages.journeyType === "NTC" || stage.stages.journeyType === "ETC")
+              )
             ) {
-              let logicalFieldVal =
-                stageSelector[0].stageInfo.applicants[
-                  fName.logical_field_name + "_a_1"
-                ];
-                if (
-                 (!logicalFieldVal && 
-                  fName.logical_field_name === "embossed_name" &&
-                  new RegExp(fName.regex).test(
-                    stageSelector[0].stageInfo.applicants["full_name_a_1"]
-                  ) && stage.stages.journeyType === "NTC") || (!logicalFieldVal && 
-                    fName.logical_field_name === "embossed_name" &&
-                    new RegExp(fName.regex).test(
-                      stageSelector[0].stageInfo.applicants["full_name_a_1"]
-                    ) && stage.stages.journeyType === "ETC")
-                ) {
-                const fullName =
-                  stageSelector[0].stageInfo.applicants["full_name_a_1"];
-                if (fullName && fullName.length >= 19) {
-                  const firstName = fullName.split(" ")[0];
-                  logicalFieldVal = firstName.length >= 19 ? "" : firstName;
-                } else {
-                  logicalFieldVal = fullName;
-                }
-              }
-              let residentialData: string | null = null;
-              if (fName.logical_field_name === "residential_address") {
-                residentialData = residentialAddress(stageSelector);
-              }
-              if (residentialData !== null) {
-                value[fName.logical_field_name] = residentialData;
-              } else {
-                if (fName.logical_field_name === "passport_no") {
-                  value[fName.logical_field_name] = logicalFieldVal
-                    ? logicalFieldVal
-                    : userInputSelector.applicants[
-                        fName.logical_field_name + "_a_1"
-                      ];
-                } else {
-                  value[fName.logical_field_name] = logicalFieldVal
-                    ? logicalFieldVal
-                    : "";
-                }
-              }
-              mandatoryFields.push(fName.logical_field_name);
-              if (
-                stageSelector[0].stageId === "ad-2" &&
-                taxSelector &&
-                taxSelector.fields
-              ) {
-                taxSelector.fields.forEach((field, index) => {
-                  const isMandatoryField = !mandatoryFields.find(
-                    (logical_name) => logical_name === field
-                  );
-                  let seqNo = field.split("_")[3];
-                  if (isMandatoryField) {
-                    if (field.substr(0, 9) === "tax_id_no") {
-                      if (
-                        seqNo &&
-                        userInputSelector.applicants[field + "_a_1"]
-                      ) {
-                        mandatoryFields.push(field);
-                      }
-                    } else {
+              const fullName = stageSelector[0].stageInfo.applicants["full_name_a_1"];
+              logicalFieldVal = fullName && fullName.length >= 19 ? "" : fullName.split(" ")[0];
+            }
+
+            let residentialData: string | null = null;
+            if (fName.logical_field_name === "residential_address") {
+              residentialData = residentialAddress(stageSelector);
+            }
+            
+            if (residentialData !== null) {
+              value[fName.logical_field_name] = residentialData;
+            } else {
+              value[fName.logical_field_name] = logicalFieldVal || fName.logical_field_name === "passport_no" ? logicalFieldVal : "";
+            }
+            
+            mandatoryFields.push(fName.logical_field_name);
+            
+            // Handling taxSelector fields dynamically
+            if (stageSelector[0].stageId === "ad-2" && taxSelector && taxSelector.fields) {
+              taxSelector.fields.forEach((field, index) => {
+                const isMandatoryField = !mandatoryFields.includes(field);
+                let seqNo = field.split("_")[3];
+                
+                if (isMandatoryField) {
+                  if (field.substr(0, 9) === "tax_id_no") {
+                    if (seqNo && userInputSelector.applicants[field + "_a_1"]) {
                       mandatoryFields.push(field);
                     }
-                  }
-                  if (index % 2 === 1 && seqNo) {
-                    if (
-                      userInputSelector.applicants[
-                        "crs_reason_code_" + seqNo + "_a_1"
-                      ]
-                    ) {
-                      mandatoryFields.push("crs_reason_code_" + seqNo);
-                    }
-                    if (
-                      userInputSelector.applicants[
-                        "crs_comments_" + seqNo + "_a_1"
-                      ]
-                    ) {
-                      mandatoryFields.push("crs_comments_" + seqNo);
-                    }
-                  }
-                });
-              }
-              if (
-                aliasSelector &&
-                aliasSelector.fields &&
-                (stageSelector[0].stageId === "ssf-1" ||
-                  stageSelector[0].stageId === "bd-1")
-              ) {
-                aliasSelector.fields.forEach((field) => {
-                  const isMandatoryField = !mandatoryFields.find(
-                    (logical_name) => logical_name === field
-                  );
-                  if (isMandatoryField) {
+                  } else {
                     mandatoryFields.push(field);
                   }
-                });
-              } 
-              if (
-                (
-                  stageSelector[0].stageId === "bd-2")
-              ) {
-               mandatoryFields.push("gender","country_of_birth","education_level","postal_code","postal_code_other","block","street_name", "per_country","per_postal_code","per_block","per_street_name" , "alt_country_1","alt_postal_code_1","alt_block_1","alt_street_name_1", "alt_country_2","alt_postal_code_2","alt_block_2","alt_street_name_2", "alt_country_3","alt_postal_code_3","alt_block_3","alt_street_name_3", "alt_country_4","alt_postal_code_4","alt_block_4","alt_street_name_4" , "alt_country_5","alt_postal_code_5","alt_block_5","alt_street_name_5");
                 }
-                if (
-                  (
-                    stageSelector[0].stageId === "ad-2")
-                ) {
-                  mandatoryFields.push("crs_reason_code","crs_comments");
-                }
-                if ((stageSelector[0].stageId === "bd-1")) {
-                  if(!mandatoryFields.includes("residency_status")){
-                    if(stageSelector[0].stageInfo.applicants.residency_status_a_1 === "CT" ||
-                      stageSelector[0].stageInfo.applicants.residency_status_a_1 === "PR"){
-                        mandatoryFields.push("residency_status","NRIC");
-                    } else if (stageSelector[0].stageInfo.applicants.residency_status_a_1 === "FR") {
-                      mandatoryFields.push("residency_status","passport_no");
-                    }
+
+                if (index % 2 === 1 && seqNo) {
+                  if (userInputSelector.applicants["crs_reason_code_" + seqNo + "_a_1"]) {
+                    mandatoryFields.push("crs_reason_code_" + seqNo);
+                  }
+                  if (userInputSelector.applicants["crs_comments_" + seqNo + "_a_1"]) {
+                    mandatoryFields.push("crs_comments_" + seqNo);
                   }
                 }
+              });
             }
-            if(fName.logical_field_name === "mobile_number_rwb" 
-            && authenticateType() === "manual" && stageSelector[0].stageId === "ssf-1"
-            && Object.keys(userInputSelector.applicants).length === 0){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["mobile_number_rwb"]})
-            );
-             res.fields.splice(4,0,stageComponents[0]);
-            setFields(fields);
+
+            // Handling aliasSelector fields
+            if (
+              aliasSelector &&
+              aliasSelector.fields &&
+              (stageSelector[0].stageId === "ssf-1" || stageSelector[0].stageId === "bd-1")
+            ) {
+              aliasSelector.fields.forEach((field) => {
+                const isMandatoryField = !mandatoryFields.includes(field);
+                if (isMandatoryField) {
+                  mandatoryFields.push(field);
+                }
+              });
             }
-            else if(fName.logical_field_name === "mobile_1" && stageSelector[0].stageId === "bd-3" 
-            && authenticateType() === "myinfo" && !additionalFields.includes("mobile_1")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["mobile_1"]})
+            
+            // Handle stage-specific mandatory fields
+            if (stageSelector[0].stageId === "bd-2") {
+              mandatoryFields.push(
+                "gender", "country_of_birth", "education_level", "postal_code", "postal_code_other",
+                "block", "street_name", "per_country", "per_postal_code", "per_block", "per_street_name",
+                "alt_country_1", "alt_postal_code_1", "alt_block_1", "alt_street_name_1",
+                "alt_country_2", "alt_postal_code_2", "alt_block_2", "alt_street_name_2",
+                "alt_country_3", "alt_postal_code_3", "alt_block_3", "alt_street_name_3",
+                "alt_country_4", "alt_postal_code_4", "alt_block_4", "alt_street_name_4",
+                "alt_country_5", "alt_postal_code_5", "alt_block_5", "alt_street_name_5"
               );
-              res.fields.splice(5,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("mobile_1");
             }
-            else if(fName.logical_field_name === "mobile_2" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo"  && !additionalFields.includes("mobile_2")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["mobile_2"]})
-              );
-              res.fields.splice(7,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("mobile_2");
+
+            if (stageSelector[0].stageId === "ad-2") {
+              mandatoryFields.push("crs_reason_code", "crs_comments");
             }
-            else if(fName.logical_field_name === "overseas_mobile1_contact_no" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("overseas_mobile1_contact_no")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["overseas_mobile1_contact_no"]})
-              );
-              res.fields.splice(9,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("overseas_mobile1_contact_no");
+
+            if (stageSelector[0].stageId === "bd-1" && !mandatoryFields.includes("residency_status")) {
+              if (stageSelector[0].stageInfo.applicants.residency_status_a_1 === "CT" ||
+                stageSelector[0].stageInfo.applicants.residency_status_a_1 === "PR") {
+                mandatoryFields.push("residency_status", "NRIC");
+              } else if (stageSelector[0].stageInfo.applicants.residency_status_a_1 === "FR") {
+                mandatoryFields.push("residency_status", "passport_no");
+              }
             }
-            else if(fName.logical_field_name === "overseas_mobile2_contact_no" && stageSelector[0].stageId === "bd-3"
-             && authenticateType() === "myinfo" && !additionalFields.includes("overseas_mobile2_contact_no")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["overseas_mobile2_contact_no"]})
-              );
-              res.fields.splice(11,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("overseas_mobile2_contact_no");
+          }
+
+          // Handle dynamic field insertions using dispatch
+          const handleDynamicFieldInsert = (fieldName, stageId, additionalIndex) => {
+            if (fName.logical_field_name === fieldName && stageSelector[0].stageId === stageId
+              && authenticateType() === "myinfo" && !additionalFields.includes(fieldName)) {
+              
+              const stageComponents = dispatch(getFields(stageSelector, { fields: [fieldName] }));
+              const updatedFieldsCopy = [...updatedFields];
+              updatedFieldsCopy[additionalIndex] = stageComponents[0]; // Insert at the specific index
+              setFields(updatedFieldsCopy);
+              additionalFields.push(fieldName);
             }
-            else if(fName.logical_field_name === "ofc1_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo"  && !additionalFields.includes("ofc1_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["ofc1_number"]})
-              );
-              res.fields.splice(13,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("ofc1_number");
-            }
-            else if(fName.logical_field_name === "ofc2_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("ofc2_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["ofc2_number"]})
-              );
-              res.fields.splice(15,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("ofc2_number");
-              console.log("ABC", fields);
-            }
-            else if(fName.logical_field_name === "office_phone1_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("office_phone1_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["office_phone1_number"]})
-              );
-              res.fields.splice(17,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("office_phone1_number");
-            }
-            else if(fName.logical_field_name === "office_phone2_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("office_phone2_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["office_phone2_number"]})
-              );
-              res.fields.splice(19,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("office_phone2_number");
-            }
-            else if(fName.logical_field_name === "ohph1_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo"  && !additionalFields.includes("ohph1_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["ohph1_number"]})
-              );
-              res.fields.splice(21,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("ohph1_number");
-            }
-            else if(fName.logical_field_name === "ohph2_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo"   && !additionalFields.includes("ohph2_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["ohph2_number"]})
-              );
-              res.fields.splice(23,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("ohph2_number");
-            }
-            else if(fName.logical_field_name === "home_phone2_number" && stageSelector[0].stageId === "bd-3"
-            && authenticateType() === "myinfo" && !additionalFields.includes("home_phone2_number")){
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields:["home_phone2_number"]})
-              );
-              res.fields.splice(25,0,stageComponents[0]);
-              setFields(fields);
-              additionalFields.push("home_phone2_number");
-            }
-          });
-        }); 
-        
-        if(banckaMandatory && (stageId === "ad-1" || (stageId === "bd-3" && userInputSelector.applicants["credit_limit_consent_a_1"] === "N")) 
+          };
+
+          // Example of dynamic field insertions for specific logical_field_names
+          handleDynamicFieldInsert("mobile_number_rwb", "ssf-1", 4);
+          handleDynamicFieldInsert("mobile_1", "bd-3", 5);
+          handleDynamicFieldInsert("mobile_2", "bd-3", 7);
+          handleDynamicFieldInsert("overseas_mobile1_contact_no", "bd-3", 9);
+          handleDynamicFieldInsert("overseas_mobile2_contact_no", "bd-3", 11);
+          handleDynamicFieldInsert("ofc1_number", "bd-3", 13);
+          handleDynamicFieldInsert("ofc2_number", "bd-3", 15);
+          handleDynamicFieldInsert("office_phone1_number", "bd-3", 17);
+          handleDynamicFieldInsert("office_phone2_number", "bd-3", 19);
+          handleDynamicFieldInsert("ohph1_number", "bd-3", 21);
+          handleDynamicFieldInsert("ohph2_number", "bd-3", 23);
+          handleDynamicFieldInsert("home_phone2_number", "bd-3", 25);
+        });
+      });
+
+      // Final update for user inputs
+      if (banckaMandatory && (stageId === "ad-1" || (stageId === "bd-3" && userInputSelector.applicants["credit_limit_consent_a_1"] === "N"))
         && bancaSelector && bancaSelector.banca_product_applicable_a_1 === "Y") {
-          setUserInputs({...value, ...banckaMandatory});          
-        } else {
-          if(stageSelector[0].stageId ==="bd-2"&& stage.stages.journeyType === "NTC" && authenticateType() ==="manual" &&stageSelector[0].stageInfo.applicants.residency_status_a_1 !== "FR"){
-             const updatedResponse = {...value,postal_code:"",street_name:"",block:""}
-             setUserInputs(updatedResponse)
-          }
-          else{
-          setUserInputs(value);
-          }
-        }
-        if (lastStageSelector !== "doc") {
-          dispatch(fieldErrorAction.getMandatoryFields(null));
-          // dispatch(stagesAction.setLastStageId(null));
-        }
-        dispatch(fieldErrorAction.getMandatoryFields(mandatoryFields));
+        setUserInputs({ ...value, ...banckaMandatory });
       } else {
+        if (stageSelector[0].stageId === "bd-2" && stage.stages.journeyType === "NTC" && authenticateType() === "manual" && stageSelector[0].stageInfo.applicants.residency_status_a_1 !== "FR") {
+          const updatedResponse = { ...value, postal_code: "", street_name: "", block: "" };
+          setUserInputs(updatedResponse);
+        } else {
+          setUserInputs(value);
+        }
+      }
+
+      if (lastStageSelector !== "doc") {
         dispatch(fieldErrorAction.getMandatoryFields(null));
       }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields, dispatch, valueSelector.value, stageSelector, banckaMandatory]);
+      dispatch(fieldErrorAction.getMandatoryFields(mandatoryFields));
 
+    } else {
+      dispatch(fieldErrorAction.getMandatoryFields(null));
+    }
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [fields, dispatch, valueSelector.value, stageSelector, banckaMandatory]);
