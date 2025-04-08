@@ -1,184 +1,145 @@
 useEffect(() => {
-    if (valueSelector.value !== false && stageId !== "doc") {
-      if (fields && fields["fields"] && fields["fields"].length > 0) {
-        let mandatoryFields: Array<string> = [];
-        console.log("Fields", fields);
+  if (valueSelector.value !== false && stageId !== "doc") {
+    if (fields && fields["fields"] && fields["fields"].length > 0) {
+      let mandatoryFields: Array<string> = [];
+      console.log("Fields", fields);
+      let value: KeyStringModel = {};
 
-        if (banckaMandatory) {
-          mandatoryFields = Object.keys(banckaMandatory);
+      fields.fields.forEach((res: FieldsetModel) => {
+        if (res.field_set_name === 'Additional Contact Details') {
+          console.log("Res", res);
         }
-
-        let value: KeyStringModel = {};
-
-        // Create a copy of the fields to ensure we're not mutating the original state
-        const updatedFields = [...fields.fields]; // Shallow copy of the fields array
-
-        updatedFields.forEach((res: FieldsetModel) => {
+        
+        res.fields.forEach((fName: KeyWithAnyModel) => {
           if (res.field_set_name === 'Additional Contact Details') {
-            console.log("Res", res);
+            console.log("Logical Field Name:", fName.logical_field_name);
           }
 
-          res.fields.forEach((fName: KeyWithAnyModel) => {
-            if (res.field_set_name === 'Additional Contact Details') {
-              console.log("Logical Field Name:", fName.logical_field_name);
-            }
-
-            if (
-              fName.mandatory === "Yes" &&
-              fName.logical_field_name !== "see_other_myInfo_details"
-            ) {
-              let logicalFieldVal =
-                stageSelector[0].stageInfo.applicants[
-                  fName.logical_field_name + "_a_1"
-                ];
-
-              // Logic for handling embossed_name field
-              if (
-                (!logicalFieldVal &&
-                  fName.logical_field_name === "embossed_name" &&
-                  new RegExp(fName.regex).test(
-                    stageSelector[0].stageInfo.applicants["full_name_a_1"]
-                  ) && stage.stages.journeyType === "NTC") || (!logicalFieldVal && 
-                    fName.logical_field_name === "embossed_name" &&
-                    new RegExp(fName.regex).test(
-                      stageSelector[0].stageInfo.applicants["full_name_a_1"]
-                    ) && stage.stages.journeyType === "ETC")
-              ) {
-                const fullName =
-                  stageSelector[0].stageInfo.applicants["full_name_a_1"];
-                if (fullName && fullName.length >= 19) {
-                  const firstName = fullName.split(" ")[0];
-                  logicalFieldVal = firstName.length >= 19 ? "" : firstName;
-                } else {
-                  logicalFieldVal = fullName;
-                }
-              }
-
-              let residentialData: string | null = null;
-              if (fName.logical_field_name === "residential_address") {
-                residentialData = residentialAddress(stageSelector);
-              }
-
-              if (residentialData !== null) {
-                value[fName.logical_field_name] = residentialData;
-              } else {
-                if (fName.logical_field_name === "passport_no") {
-                  value[fName.logical_field_name] = logicalFieldVal
-                    ? logicalFieldVal
-                    : userInputSelector.applicants[
-                        fName.logical_field_name + "_a_1"
-                      ];
-                } else {
-                  value[fName.logical_field_name] = logicalFieldVal
-                    ? logicalFieldVal
-                    : "";
-                }
-              }
-
-              mandatoryFields.push(fName.logical_field_name);
-
-              // Logic for handling additional fields like taxSelector, aliasSelector, etc.
-              if (
-                stageSelector[0].stageId === "ad-2" &&
-                taxSelector &&
-                taxSelector.fields
-              ) {
-                taxSelector.fields.forEach((field, index) => {
-                  const isMandatoryField = !mandatoryFields.find(
-                    (logical_name) => logical_name === field
-                  );
-                  let seqNo = field.split("_")[3];
-                  if (isMandatoryField) {
-                    if (field.substr(0, 9) === "tax_id_no") {
-                      if (
-                        seqNo &&
-                        userInputSelector.applicants[field + "_a_1"]
-                      ) {
-                        mandatoryFields.push(field);
-                      }
-                    } else {
-                      mandatoryFields.push(field);
-                    }
-                  }
-                  if (index % 2 === 1 && seqNo) {
-                    if (
-                      userInputSelector.applicants[
-                        "crs_reason_code_" + seqNo + "_a_1"
-                      ]
-                    ) {
-                      mandatoryFields.push("crs_reason_code_" + seqNo);
-                    }
-                    if (
-                      userInputSelector.applicants[
-                        "crs_comments_" + seqNo + "_a_1"
-                      ]
-                    ) {
-                      mandatoryFields.push("crs_comments_" + seqNo);
-                    }
-                  }
-                });
-              }
-
-              // Handle aliasSelector and other conditions
-              if (
-                aliasSelector &&
-                aliasSelector.fields &&
-                (stageSelector[0].stageId === "ssf-1" ||
-                  stageSelector[0].stageId === "bd-1")
-              ) {
-                aliasSelector.fields.forEach((field) => {
-                  const isMandatoryField = !mandatoryFields.find(
-                    (logical_name) => logical_name === field
-                  );
-                  if (isMandatoryField) {
-                    mandatoryFields.push(field);
-                  }
-                });
-              }
-
-              // Handling for stage specific conditions like bd-2
-              if (stageSelector[0].stageId === "bd-2") {
-                mandatoryFields.push("gender", "country_of_birth", "education_level", "postal_code", "postal_code_other", "block", "street_name");
-              }
-
-              // Add other fields for ad-2, bd-1, etc.
-            }
-
-            // Handle adding extra fields to fields array (e.g., mobile_number_rwb)
-            if (fName.logical_field_name === "mobile_number_rwb" 
-            && authenticateType() === "manual" && stageSelector[0].stageId === "ssf-1"
+          // Check the condition and insert the new component without mutating the original array
+          if (fName.logical_field_name === "mobile_number_rwb" 
+            && authenticateType() === "manual" 
+            && stageSelector[0].stageId === "ssf-1"
             && Object.keys(userInputSelector.applicants).length === 0) {
-              const stageComponents = dispatch(
-                getFields(stageSelector, {fields: ["mobile_number_rwb"]})
-              );
-              res.fields.splice(4, 0, stageComponents[0]);
-              setFields({ ...fields, fields: updatedFields }); // Create a new copy of fields state
-            }
-            // Handle other similar conditions for other fields here
-          });
+            
+            const stageComponents = dispatch(
+              getFields(stageSelector, {fields:["mobile_number_rwb"]})
+            );
+
+            // Create a new fields array by inserting the component at the desired position
+            const updatedFields = [
+              ...res.fields.slice(0, 4), // Everything before index 4
+              stageComponents[0], // Insert the new component
+              ...res.fields.slice(4), // Everything after index 4
+            ];
+
+            // Update fields with the new fields array
+            setFields({
+              ...fields,
+              fields: fields.fields.map((fieldSet) =>
+                fieldSet.field_set_name === res.field_set_name
+                  ? { ...fieldSet, fields: updatedFields }
+                  : fieldSet
+              ),
+            });
+
+          } else if (fName.logical_field_name === "mobile_1" && stageSelector[0].stageId === "bd-3" 
+            && authenticateType() === "myinfo" && !additionalFields.includes("mobile_1")) {
+
+            const stageComponents = dispatch(
+              getFields(stageSelector, {fields:["mobile_1"]})
+            );
+
+            const updatedFields = [
+              ...res.fields.slice(0, 5),
+              stageComponents[0],
+              ...res.fields.slice(5),
+            ];
+
+            setFields({
+              ...fields,
+              fields: fields.fields.map((fieldSet) =>
+                fieldSet.field_set_name === res.field_set_name
+                  ? { ...fieldSet, fields: updatedFields }
+                  : fieldSet
+              ),
+            });
+
+            additionalFields.push("mobile_1");
+
+          } else if (fName.logical_field_name === "mobile_2" && stageSelector[0].stageId === "bd-3"
+            && authenticateType() === "myinfo" && !additionalFields.includes("mobile_2")) {
+
+            const stageComponents = dispatch(
+              getFields(stageSelector, {fields:["mobile_2"]})
+            );
+
+            const updatedFields = [
+              ...res.fields.slice(0, 7),
+              stageComponents[0],
+              ...res.fields.slice(7),
+            ];
+
+            setFields({
+              ...fields,
+              fields: fields.fields.map((fieldSet) =>
+                fieldSet.field_set_name === res.field_set_name
+                  ? { ...fieldSet, fields: updatedFields }
+                  : fieldSet
+              ),
+            });
+
+            additionalFields.push("mobile_2");
+
+          } else if (fName.logical_field_name === "overseas_mobile1_contact_no" && stageSelector[0].stageId === "bd-3"
+            && authenticateType() === "myinfo" && !additionalFields.includes("overseas_mobile1_contact_no")) {
+
+            const stageComponents = dispatch(
+              getFields(stageSelector, {fields:["overseas_mobile1_contact_no"]})
+            );
+
+            const updatedFields = [
+              ...res.fields.slice(0, 9),
+              stageComponents[0],
+              ...res.fields.slice(9),
+            ];
+
+            setFields({
+              ...fields,
+              fields: fields.fields.map((fieldSet) =>
+                fieldSet.field_set_name === res.field_set_name
+                  ? { ...fieldSet, fields: updatedFields }
+                  : fieldSet
+              ),
+            });
+
+            additionalFields.push("overseas_mobile1_contact_no");
+
+          } // Add more `else if` conditions here with similar logic for other fields
+
         });
+      });
 
-        // Final user input updates
-        if (banckaMandatory && (stageId === "ad-1" || (stageId === "bd-3" && userInputSelector.applicants["credit_limit_consent_a_1"] === "N"))
+      if (banckaMandatory && (stageId === "ad-1" || (stageId === "bd-3" && userInputSelector.applicants["credit_limit_consent_a_1"] === "N"))
         && bancaSelector && bancaSelector.banca_product_applicable_a_1 === "Y") {
-          setUserInputs({ ...value, ...banckaMandatory });
-        } else {
-          if (stageSelector[0].stageId === "bd-2" && stage.stages.journeyType === "NTC" && authenticateType() === "manual" && stageSelector[0].stageInfo.applicants.residency_status_a_1 !== "FR") {
-            const updatedResponse = { ...value, postal_code: "", street_name: "", block: "" };
-            setUserInputs(updatedResponse);
-          } else {
-            setUserInputs(value);
-          }
-        }
-
-        if (lastStageSelector !== "doc") {
-          dispatch(fieldErrorAction.getMandatoryFields(null));
-        }
-
-        dispatch(fieldErrorAction.getMandatoryFields(mandatoryFields));
+        setUserInputs({ ...value, ...banckaMandatory });
       } else {
+        if (stageSelector[0].stageId === "bd-2" && stage.stages.journeyType === "NTC" && authenticateType() === "manual" 
+          && stageSelector[0].stageInfo.applicants.residency_status_a_1 !== "FR") {
+          const updatedResponse = { ...value, postal_code: "", street_name: "", block: "" };
+          setUserInputs(updatedResponse);
+        } else {
+          setUserInputs(value);
+        }
+      }
+
+      if (lastStageSelector !== "doc") {
         dispatch(fieldErrorAction.getMandatoryFields(null));
       }
+
+      dispatch(fieldErrorAction.getMandatoryFields(mandatoryFields));
+    } else {
+      dispatch(fieldErrorAction.getMandatoryFields(null));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields, dispatch, valueSelector.value, stageSelector, banckaMandatory]);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [fields, dispatch, valueSelector.value, stageSelector, banckaMandatory]);
