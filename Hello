@@ -1,1 +1,155 @@
-<div class="countryCodeWithPhone"><div class="field__group"><div aria-details="Additional Contact Details" class="stage-header">Additional Contact Details</div><div class="multi-select"><label for="select_alt_contacts">Want to Declare additional contacts?</label><div class="multi-select__field "><span class="multi-select__fieldlabel"><span>Mobile No. 1</span><span class="multi-close"></span></span><span class="multi-select__fieldlabel"><span>Mobile No. 2</span><span class="multi-close"></span></span><span class="multi-select__fieldlabel"><span>Overseas Mobile No. 1</span><span class="multi-close"></span></span></div></div><div class="dropdown-select " id="mobile_1"><label for="mobile_1">Mobile No. 1</label><div class="dropdown-container"><div class="dropdown-select__field "><input type="text" class="dropdown-select__input" id="mobile_1_a_1" placeholder=""></div></div><span class=""></span></div><div class="phone" id="mobile_1_add"><label for="mobile_1_add"></label><div class="phone__container "><input type="text" name="mobile_1_add" id="mobile_1_add_a_1" placeholder="" minlength="8" maxlength="8" pattern="^[89]\d{7}$" disabled="" value=""></div></div><div class="dropdown-select " id="mobile_2"><label for="mobile_2">Mobile No. 2</label><div class="dropdown-container"><div class="dropdown-select__field "><input type="text" class="dropdown-select__input" id="mobile_2_a_1" placeholder=""></div></div><span class=""></span></div><div class="phone" id="mobile_2_add"><label for="mobile_2_add"></label><div class="phone__container "><input type="text" name="mobile_2_add" id="mobile_2_add_a_1" placeholder="" minlength="8" maxlength="8" pattern="^[89]\d{7}$" disabled="" value=""></div></div><div class="dropdown-select " id="overseas_mobile1_contact_no"><label for="overseas_mobile1_contact_no">Overseas Mobile No. 1</label><div class="dropdown-container"><div class="dropdown-select__field "><input type="text" class="dropdown-select__input" id="overseas_mobile1_contact_no_a_1" placeholder=""></div></div><span class=""></span></div><div class="phone" id="overseas_mobile1"><label for="overseas_mobile1"></label><div class="phone__container "><input type="text" name="overseas_mobile1" id="overseas_mobile1_a_1" placeholder="" minlength="5" maxlength="14" pattern="^[0-9]+$" disabled="" value=""></div></div></div></div>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mobile Fields Layout</title>
+    <style>
+      .contactFormContainer {
+        
+      .field__group {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .text label {
+        font-size: 14px;
+        color: #333;
+        font-weight: 600;
+      }
+
+      .text input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 5px;
+      }
+
+      .dropdown-select label {
+        font-size: 14px;
+        color: #333;
+        font-weight: 600;
+      }
+
+      .dropdown-select__input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 5px;
+      }
+
+      .phone__container input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-top: 5px;
+      }
+
+      /* Flexbox layout to align Mobile No. and Add fields side by side */
+      .mobile-container {
+        display: flex;
+        gap: 20px; /* Added gap to ensure space between fields */
+        margin-bottom: 20px;
+      }
+
+      .dropdown-select {
+        flex: 0 0 25%; /* Set width to 25% */
+      }
+
+      .phone {
+        flex: 0 0 75%; /* Set width to 75% */
+      }
+
+      .dropdown-select input,
+      .phone input {
+        width: 100%;
+      }
+
+      /* Add margin to the right of dropdown to add spacing between the fields */
+      .dropdown-select {
+        margin-right: 10px; /* Space between Mobile No. and Add Mobile No. */
+      }
+
+      /* Remove margin from the last field in each row */
+      .dropdown-select:last-child,
+      .phone:last-child {
+        margin-bottom: 0;
+      }}
+    </style>
+  </head>
+  <body>
+    <div class="contactFormContainer">
+      <div class="field__group">
+        <div aria-details="Additional Contact Details" class="stage-header">Additional Contact Details</div>
+
+        <!-- Mobile No. 1 and Add Fields side by side -->
+        <div class="mobile-container">
+          <div class="dropdown-select" id="mobile_1">
+            <label for="mobile_1">Mobile No. 1</label>
+            <div class="dropdown-container">
+              <input type="text" class="dropdown-select__input" id="mobile_1_a_1" placeholder="">
+            </div>
+          </div>
+          <div class="phone" id="mobile_1_add">
+            <label for="mobile_1_add">Add Mobile No. 1</label>
+            <div class="phone__container">
+              <input type="text" name="mobile_1_add" id="mobile_1_add_a_1" placeholder="" minlength="8" maxlength="8" pattern="^[89]\d{7}$" disabled="" value="">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile No. 2 and Add Fields side by side -->
+        <div class="mobile-container">
+          <div class="dropdown-select" id="mobile_2">
+            <label for="mobile_2">Mobile No. 2</label>
+            <div class="dropdown-container">
+              <input type="text" class="dropdown-select__input" id="mobile_2_a_1" placeholder="">
+            </div>
+          </div>
+          <div class="phone" id="mobile_2_add">
+            <label for="mobile_2_add">Add Mobile No. 2</label>
+            <div class="phone__container">
+              <input type="text" name="mobile_2_add" id="mobile_2_add_a_1" placeholder="" minlength="8" maxlength="8" pattern="^[89]\d{7}$" disabled="" value="">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile No. 3 and Add Fields side by side -->
+        <div class="mobile-container">
+          <div class="dropdown-select" id="mobile_3">
+            <label for="mobile_3">Mobile No. 3</label>
+            <div class="dropdown-container">
+              <input type="text" class="dropdown-select__input" id="mobile_3_a_1" placeholder="">
+            </div>
+          </div>
+          <div class="phone" id="mobile_3_add">
+            <label for="mobile_3_add">Add Mobile No. 3</label>
+            <div class="phone__container">
+              <input type="text" name="mobile_3_add" id="mobile_3_add_a_1" placeholder="" minlength="8" maxlength="8" pattern="^[89]\d{7}$" disabled="" value="">
+            </div>
+          </div>
+        </div>
+
+        <!-- Overseas Mobile No. 1 and Add Fields side by side -->
+        <div class="mobile-container">
+          <div class="dropdown-select" id="overseas_mobile1_contact_no">
+            <label for="overseas_mobile1_contact_no">Overseas Mobile No. 1</label>
+            <div class="dropdown-container">
+              <input type="text" class="dropdown-select__input" id="overseas_mobile1_contact_no_a_1" placeholder="">
+            </div>
+          </div>
+          <div class="phone" id="overseas_mobile1">
+            <label for="overseas_mobile1">Add Overseas Mobile No. 1</label>
+            <div class="phone__container">
+              <input type="text" name="overseas_mobile1" id="overseas_mobile1_a_1" placeholder="" minlength="5" maxlength="14" pattern="^[0-9]+$" disabled="" value="">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
