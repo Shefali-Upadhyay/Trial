@@ -1,4 +1,11 @@
-/* Container to hold all the mobile number pairs */
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mobile Numbers Layout</title>
+    <style>
+      /* Container to hold all the mobile number pairs */
       .mobile-container {
         display: flex;
         flex-wrap: wrap;
@@ -18,3 +25,109 @@
         padding: 8px;
         box-sizing: border-box;
       }
+    </style>
+  </head>
+  <body>
+    <div class="mobile-container">
+      <!-- Mobile Number 1 -->
+      <div class="dropdown-select">
+        <label for="mobile_1">Mobile No. 1</label>
+        <input type="text" id="mobile_1" placeholder="Mobile No. 1" />
+      </div>
+      <div class="phone">
+        <label for="mobile_1_add">Add. Mobile No. 1</label>
+        <input type="text" id="mobile_1_add" placeholder="Add. Mobile No. 1" />
+      </div>
+
+      <!-- Mobile Number 2 -->
+      <div class="dropdown-select">
+        <label for="mobile_2">Mobile No. 2</label>
+        <input type="text" id="mobile_2" placeholder="Mobile No. 2" />
+      </div>
+      <div class="phone">
+        <label for="mobile_2_add">Add. Mobile No. 2</label>
+        <input type="text" id="mobile_2_add" placeholder="Add. Mobile No. 2" />
+      </div>
+
+      <!-- Mobile Number 3 -->
+      <div class="dropdown-select">
+        <label for="mobile_3">Mobile No. 3</label>
+        <input type="text" id="mobile_3" placeholder="Mobile No. 3" />
+      </div>
+      <div class="phone">
+        <label for="mobile_3_add">Add. Mobile No. 3</label>
+        <input type="text" id="mobile_3_add" placeholder="Add. Mobile No. 3" />
+      </div>
+
+      <!-- Mobile Number 4 -->
+      <div class="dropdown-select">
+        <label for="mobile_4">Mobile No. 4</label>
+        <input type="text" id="mobile_4" placeholder="Mobile No. 4" />
+      </div>
+      <div class="phone">
+        <label for="mobile_4_add">Add. Mobile No. 4</label>
+        <input type="text" id="mobile_4_add" placeholder="Add. Mobile No. 4" />
+      </div>
+
+      <!-- Mobile Number 5 -->
+      <div class="dropdown-select">
+        <label for="mobile_5">Mobile No. 5</label>
+        <input type="text" id="mobile_5" placeholder="Mobile No. 5" />
+      </div>
+      <div class="phone">
+        <label for="mobile_5_add">Add. Mobile No. 5</label>
+        <input type="text" id="mobile_5_add" placeholder="Add. Mobile No. 5" />
+      </div>
+
+      <!-- Mobile Number 6 -->
+      <div class="dropdown-select">
+        <label for="mobile_6">Mobile No. 6</label>
+        <input type="text" id="mobile_6" placeholder="Mobile No. 6" />
+      </div>
+      <div class="phone">
+        <label for="mobile_6_add">Add. Mobile No. 6</label>
+        <input type="text" id="mobile_6_add" placeholder="Add. Mobile No. 6" />
+      </div>
+
+      <!-- Mobile Number 7 -->
+      <div class="dropdown-select">
+        <label for="mobile_7">Mobile No. 7</label>
+        <input type="text" id="mobile_7" placeholder="Mobile No. 7" />
+      </div>
+      <div class="phone">
+        <label for="mobile_7_add">Add. Mobile No. 7</label>
+        <input type="text" id="mobile_7_add" placeholder="Add. Mobile No. 7" />
+      </div>
+
+      <!-- Mobile Number 8 -->
+      <div class="dropdown-select">
+        <label for="mobile_8">Mobile No. 8</label>
+        <input type="text" id="mobile_8" placeholder="Mobile No. 8" />
+      </div>
+      <div class="phone">
+        <label for="mobile_8_add">Add. Mobile No. 8</label>
+        <input type="text" id="mobile_8_add" placeholder="Add. Mobile No. 8" />
+      </div>
+
+      <!-- Mobile Number 9 -->
+      <div class="dropdown-select">
+        <label for="mobile_9">Mobile No. 9</label>
+        <input type="text" id="mobile_9" placeholder="Mobile No. 9" />
+      </div>
+      <div class="phone">
+        <label for="mobile_9_add">Add. Mobile No. 9</label>
+        <input type="text" id="mobile_9_add" placeholder="Add. Mobile No. 9" />
+      </div>
+
+      <!-- Mobile Number 10 -->
+      <div class="dropdown-select">
+        <label for="mobile_10">Mobile No. 10</label>
+        <input type="text" id="mobile_10" placeholder="Mobile No. 10" />
+      </div>
+      <div class="phone">
+        <label for="mobile_10_add">Add. Mobile No. 10</label>
+        <input type="text" id="mobile_10_add" placeholder="Add. Mobile No. 10" />
+      </div>
+    </div>
+  </body>
+</html>
