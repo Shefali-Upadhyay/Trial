@@ -1,60 +1,163 @@
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-.container {
-  display: flex;
-  flex-wrap: wrap; /* Allows items to wrap to the next row */
-}
- 
-.item {
-  box-sizing: border-box; /* Ensures padding/border don't affect width */
-  padding: 10px;
-  text-align: center;
-  border: 1px solid #ccc;
-}
-.item.item-1 {
-  order:1;/* First item in the row takes 25% width */
-}
- 
-.item.item-3 {
-  flex: 0 0 75%;
-  order:2;/* Second item in the row takes 75% width */
-}
-.item.item-4 {
-  order:4;/* First item in the row takes 25% width */
-}
-.phone{
-flex: 0 0 75%;
-}
-.area{
-flex: 0 0 25%;
-}
-.item.item-2 {
-  order:3;/* Second item in the row takes 75% width */
-}
-.email{flex:0 0 100%;order:101}
-</style>
-</head>
-<body>
- 
-<h1>Flex Items</h1>
- 
-<p>All direct children of a flex container becomes flex items:</p>
- 
-<div class="flex-container">
+stageId === 'bd-3' && currentSection["field_set_name"] === "Additional Contact Details"?
+                         <div className="countryCodeWithPhone">
+                           <div
+                           className="field__group"
+                           key={currentSection["field_set_name"]}
+                         >
+                           {currentSection["field_set_name"].trim() !== "" &&
+                             currentSection["fields"][0].field_set !==
+                               "No" && (
+                               <div
+                                 aria-details={
+                                   currentSection["field_set_name"]
+                                 }
+                                 className="stage-header"
+                               >
+                                 {currentSection["field_set_name"]}
+                               </div>
+                             )}
+                           {currentSection["fields"].map(
+                             (
+                               currentSectionDetails: KeyWithAnyModel,
+                               index: number
+                             ) => {
+                              console.log(currentSectionDetails)
+                               currentStageSection = currentSectionDetails;
+                               return renderComponent(
+                                 currentSectionDetails,
+                                 index,
+                                 handleCallback,
+                                 handleFieldDispatch,
+                                 userInputs
+                               );
+                             }
+                           )}
+                        </div>
+                         </div>
 
-<div class="container">
-<div class="item item-1 area">Area code phone1</div>
-<div class="item item-2 area">Areacodephone 2</div>
-<div class="item item-3 phone">phone1</div>
-<div class="item item-4 phone">phone2</div>
-<div class=" item email">email</div>
-<div class=" item email">email</div>
-</div>
-</div>
-</body>
-</html>
+
+
+
+import { createElement } from "react";
+import Dates from "../../../shared/components/dates/dates";
+import Date from "../../../shared/components/dates/dates";
+import Information from "../../../shared/components/information/information";
+import MultiSelectionBox from "../../../shared/components/multi-selection-box/multi-selection-box";
+import Number from "../../../shared/components/number/number";
+import OtherMyinfo from "../../../shared/components/other-myinfo/other-myinfo";
+import Phone from "../../../shared/components/phone/phone";
+import RadioWithLabel from "../../../shared/components/radio-with-label/radio-with-label";
+import SelectionBox from "../../../shared/components/selection-box/selection-box";
+import Text from "../../../shared/components/text/text";
+import Toggle from "../../../shared/components/toggle/toggle";
+import TypeAhead from "../../../shared/components/type-ahead/type-ahead";
+import { KeyWithAnyModel } from "../../../utils/model/common-model";
+import Button from "../../../shared/components/button/button";
+import Amount from "../../../shared/components/amount/amount";
+import SliderWithLimit from "../../../shared/components/slider-with-limit/slider-with-limit";
+import SliderWithCurrency from "../../../shared/components/slider-with-currency/slider-with-currency";
+import { authenticateType } from "../../../utils/common/change.utils";
+import Signature from "../../../shared/components/signature/signature";
+// import ButtonGroup from "../../../shared/components/button-group/button-group";
+
+const keysToComponentMap: KeyWithAnyModel = {
+  Dates: Dates,
+  RadioWithLabel: RadioWithLabel,
+  Phone:Phone,
+  Text: Text,
+  SelectionBox: SelectionBox,
+  MultiSelectionBox: MultiSelectionBox,
+  Toggle: Toggle,
+  Number: Number,
+  Information: Information,
+  OtherMyinfo: OtherMyinfo,
+  TypeAhead: TypeAhead,
+  Button: Button,
+  Amount: Amount,
+  SliderWithLimit: SliderWithLimit,
+  SliderWithlimit: SliderWithLimit,
+  SliderWithCurrency: SliderWithCurrency,
+Display: Signature,
+  // ButtonGroup: ButtonGroup,
+  RateButton: Button,
+  authorize: Toggle, 
+  Date: Date,
+  Infowithoutmodal:Information,
+  PhoneAreaCode: Phone
+};
+
+const renderComponent = (
+  currentSection: KeyWithAnyModel,
+  _i: number,
+  handleCallback: any,
+  handleFieldDispatch: any,
+  userInput: { [key: string]: string }
+) => {
+  /* istanbul ignore next */
+  let component = currentSection.component_type.replace(/\s/g, "");
+  if(currentSection.logical_field_name === "mobile_number_rwb" && authenticateType() === 'manual'){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "mobile_number" && authenticateType() === 'manual'){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "mobile_1"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "mobile_1_add"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "mobile_2"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "mobile_2_add"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "overseas_mobile1_contact_no"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "overseas_mobile1"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "overseas_mobile2_contact_no"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "overseas_mobile2"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "ofc1_number"){
+    keysToComponentMap['PhoneAreaCode']= SelectionBox;
+  }else if(currentSection.logical_field_name === "ofc1"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "ofc2_number"){
+    keysToComponentMap['PhoneAreaCode']= SelectionBox;
+  }else if(currentSection.logical_field_name === "ofc2"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "home_phone2_number"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "home_phone2"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "office_phone1_number"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "office_phone1"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "office_phone2_number"){
+    keysToComponentMap['Phone']= SelectionBox;
+  }else if(currentSection.logical_field_name === "office_phone2"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "ohph1_number"){
+    keysToComponentMap['PhoneAreaCode']= SelectionBox;
+  }else if(currentSection.logical_field_name === "ohph1"){
+    keysToComponentMap['Phone']=  Phone;
+  }else if(currentSection.logical_field_name === "ohph2_number"){
+    keysToComponentMap['PhoneAreaCode']= SelectionBox;
+  }else if(currentSection.logical_field_name === "ohph2"){
+    keysToComponentMap['Phone']=  Phone;
+  }
+  /* istanbul ignore else */
+  if (typeof keysToComponentMap[component] !== "undefined") {
+    return createElement(keysToComponentMap[component], {
+      data: currentSection,
+      key: currentSection.logical_field_name,
+      handleCallback: handleCallback,
+      handleFieldDispatch: handleFieldDispatch,
+      value: userInput,
+    });
+  }
+};
+
+export default renderComponent;
+
  
  
  
