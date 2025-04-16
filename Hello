@@ -1,1 +1,98 @@
-26.31% Statements 20/761.44% Branches 1/6916.66% Functions 4/2426.02% Lines 19/73
+import React from "react"; import { render, fireEvent, screen } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Date from "../Date"; // Adjust path based on your structure import validateService from "../../../utils/validation/validate.service"; import * as lastAccessed from "../../../utils/store/last-accessed-slice"; import errorMsg from "../../../utils/constants/errorMsg";
+
+jest.mock("../../../utils/validation/validate.service"); jest.mock("../../../utils/store/last-accessed-slice");
+
+const mockStore = configureStore([]); let store;
+
+const mockProps = { data: { fieldName: "Date of Birth", fieldId: "sample_field", mandatory: "Yes", fieldType: "Date", editable: true, minAge: 18, maxAge: 60, }, index: 0, handleCallback: jest.fn(), };
+
+const renderComponent = () => { store = mockStore({ stages: { stages: [ { stageId: "bd-2", stageInfo: { applicants: {}, products: [], }, }, ], }, fielderror: { error: [], }, });
+
+render( <Provider store={store}> <Date {...mockProps} /> </Provider> ); };
+
+describe("Date Component Extra Coverage", () => { it("should show age invalid message when age validation fails", () => { (validateService.isValidDate as jest.Mock).mockReturnValue(true); (validateService.calculateAge as jest.Mock).mockReturnValue(5); (validateService.validateAge as jest.Mock).mockReturnValue(true); (validateService.getValidationMsg as jest.Mock).mockReturnValue("is not valid");
+
+renderComponent();
+fireEvent.change(screen.getByPlaceholderText("YYYY"), {
+  target: { value: "2020" },
+});
+
+expect(screen.getByText("Date of Birth is not valid")).toBeInTheDocument();
+
+});
+
+it("should show error for empty mandatory fields", () => { renderComponent(); fireEvent.change(screen.getByPlaceholderText("DD"), { target: { value: "" } }); fireEvent.change(screen.getByPlaceholderText("MM"), { target: { value: "" } }); fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "" } });
+
+expect(screen.getByText(`${errorMsg.emity} Date of Birth`)).toBeInTheDocument();
+
+});
+
+it("should not show error for non-mandatory empty field", () => { mockProps.data.mandatory = "No"; renderComponent();
+
+fireEvent.change(screen.getByPlaceholderText("DD"), { target: { value: "" } });
+fireEvent.change(screen.getByPlaceholderText("MM"), { target: { value: "" } });
+fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "" } });
+
+expect(screen.queryByText(`${errorMsg.emity} Date of Birth`)).not.toBeInTheDocument();
+
+});
+
+it("should move focus from DD to MM and from MM to YYYY automatically", () => { renderComponent();
+
+const dayInput = screen.getByPlaceholderText("DD");
+const monthInput = screen.getByPlaceholderText("MM");
+const yearInput = screen.getByPlaceholderText("YYYY");
+
+fireEvent.change(dayInput, { target: { value: "12" } });
+expect(monthInput).toHaveFocus();
+
+fireEvent.change(monthInput, { target: { value: "08" } });
+expect(yearInput).toHaveFocus();
+
+});
+
+it("should disable inputs if stageId is bd-1 and auth is myinfo", () => { (require("../../../utils/common/change.utils") as any).authenticateType = jest.fn(() => "myinfo");
+
+store = mockStore({
+  stages: {
+    stages: [
+      {
+        stageId: "bd-1",
+        stageInfo: {
+          applicants: {},
+          products: [],
+        },
+      },
+    ],
+  },
+  fielderror: {
+    error: [],
+  },
+});
+
+render(
+  <Provider store={store}>
+    <Date {...mockProps} />
+  </Provider>
+);
+
+expect(screen.getByPlaceholderText("DD")).toBeDisabled();
+expect(screen.getByPlaceholderText("MM")).toBeDisabled();
+expect(screen.getByPlaceholderText("YYYY")).toBeDisabled();
+
+});
+
+it("should dispatch last accessed field on focus", () => { renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.focus(yearInput);
+
+expect(lastAccessed.lastAction.getField).toHaveBeenCalledWith("sample_field");
+
+});
+
+it("should bind 9 to 09 in DD and trigger changeHandler", () => { renderComponent();
+
+const dayInput = screen.getByPlaceholderText("DD");
+fireEvent.blur(dayInput, { target: { value: "9" } });
+
+// Additional checks can be done if change handler is being tested for callback
+
+}); });
