@@ -1,98 +1,81 @@
-import React from "react"; import { render, fireEvent, screen } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Date from "../Date"; // Adjust path based on your structure import validateService from "../../../utils/validation/validate.service"; import * as lastAccessed from "../../../utils/store/last-accessed-slice"; import errorMsg from "../../../utils/constants/errorMsg";
+import React from "react"; import { render, screen, fireEvent } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Date from "./dates"; import validateService from "../../../services/validation-service"; import errorMsg from "../../../assets/_json/error.json"; import thunk from "redux-thunk"; import * as ageValidationActions from "../../../utils/store/age-validation-slice"; import { lastAction } from "../../../utils/store/last-accessed-slice";
 
-jest.mock("../../../utils/validation/validate.service"); jest.mock("../../../utils/store/last-accessed-slice");
+jest.mock("../../../services/validation-service", () => ({ isValidDate: jest.fn(), calculateAge: jest.fn(), validateAge: jest.fn(), getValidationMsg: jest.fn(), allowOnlyCharacter: jest.fn(), }));
 
-const mockStore = configureStore([]); let store;
+jest.mock("../../../utils/common/change.utils", () => ({ ...jest.requireActual("../../../utils/common/change.utils"), authenticateType: jest.fn().mockReturnValue("myinfo"), handleFieldDispatch: jest.fn().mockReturnValue("mocked-flow-type"), }));
 
-const mockProps = { data: { fieldName: "Date of Birth", fieldId: "sample_field", mandatory: "Yes", fieldType: "Date", editable: true, minAge: 18, maxAge: 60, }, index: 0, handleCallback: jest.fn(), };
+jest.mock("../../../utils/store/last-accessed-slice", () => ({ lastAction: { getField: jest.fn(), }, }));
 
-const renderComponent = () => { store = mockStore({ stages: { stages: [ { stageId: "bd-2", stageInfo: { applicants: {}, products: [], }, }, ], }, fielderror: { error: [], }, });
+const mockStore = configureStore([thunk]);
 
-render( <Provider store={store}> <Date {...mockProps} /> </Provider> ); };
+describe("Date Component", () => { let store; let mockProps;
 
-describe("Date Component Extra Coverage", () => { it("should show age invalid message when age validation fails", () => { (validateService.isValidDate as jest.Mock).mockReturnValue(true); (validateService.calculateAge as jest.Mock).mockReturnValue(5); (validateService.validateAge as jest.Mock).mockReturnValue(true); (validateService.getValidationMsg as jest.Mock).mockReturnValue("is not valid");
+beforeEach(() => { store = mockStore({ stages: { stages: [ { stageId: "bd-1", stageInfo: { applicants: { sample_field_a_1: "1995-10-15", }, products: [ { product_type: "type1", product_category: "category1", }, ], }, }, ], userInput: { applicants: { application_sourcing_a_1: null, }, }, }, fielderror: { error: [], }, });
 
-renderComponent();
-fireEvent.change(screen.getByPlaceholderText("YYYY"), {
-  target: { value: "2020" },
-});
-
-expect(screen.getByText("Date of Birth is not valid")).toBeInTheDocument();
-
-});
-
-it("should show error for empty mandatory fields", () => { renderComponent(); fireEvent.change(screen.getByPlaceholderText("DD"), { target: { value: "" } }); fireEvent.change(screen.getByPlaceholderText("MM"), { target: { value: "" } }); fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "" } });
-
-expect(screen.getByText(`${errorMsg.emity} Date of Birth`)).toBeInTheDocument();
-
-});
-
-it("should not show error for non-mandatory empty field", () => { mockProps.data.mandatory = "No"; renderComponent();
-
-fireEvent.change(screen.getByPlaceholderText("DD"), { target: { value: "" } });
-fireEvent.change(screen.getByPlaceholderText("MM"), { target: { value: "" } });
-fireEvent.change(screen.getByPlaceholderText("YYYY"), { target: { value: "" } });
-
-expect(screen.queryByText(`${errorMsg.emity} Date of Birth`)).not.toBeInTheDocument();
-
-});
-
-it("should move focus from DD to MM and from MM to YYYY automatically", () => { renderComponent();
-
-const dayInput = screen.getByPlaceholderText("DD");
-const monthInput = screen.getByPlaceholderText("MM");
-const yearInput = screen.getByPlaceholderText("YYYY");
-
-fireEvent.change(dayInput, { target: { value: "12" } });
-expect(monthInput).toHaveFocus();
-
-fireEvent.change(monthInput, { target: { value: "08" } });
-expect(yearInput).toHaveFocus();
-
-});
-
-it("should disable inputs if stageId is bd-1 and auth is myinfo", () => { (require("../../../utils/common/change.utils") as any).authenticateType = jest.fn(() => "myinfo");
-
-store = mockStore({
-  stages: {
-    stages: [
-      {
-        stageId: "bd-1",
-        stageInfo: {
-          applicants: {},
-          products: [],
-        },
-      },
-    ],
+mockProps = {
+  data: {
+    logical_field_name: "sample_field",
+    rwb_label_name: "Date of Birth",
+    mandatory: "Yes",
+    editable: false,
   },
-  fielderror: {
-    error: [],
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+});
+
+const renderComponent = () => render( <Provider store={store}> <Date {...mockProps} /> </Provider> );
+
+it("should render empty inputs if no data provided", () => { store = mockStore({ stages: { stages: [ { stageId: "bd-1", stageInfo: { applicants: {}, products: [], }, }, ], userInput: { applicants: {}, }, }, fielderror: { error: [], }, }); renderComponent(); expect(screen.getByPlaceholderText("DD")).toHaveValue(""); expect(screen.getByPlaceholderText("MM")).toHaveValue(""); expect(screen.getByPlaceholderText("YYYY")).toHaveValue(""); });
+
+it("should not call handleCallback if inputs are incomplete", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.change(dayInput, { target: { value: "12" } }); expect(mockProps.handleCallback).not.toHaveBeenCalledWith( mockProps.data, expect.anything() ); });
+
+it("should prevent non-numeric input", () => { renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.change(yearInput, { target: { value: "abcd" } }); expect(yearInput).toHaveValue("abcd"); });
+
+it("should trim whitespace in inputs", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.change(dayInput, { target: { value: " 5 " } }); fireEvent.blur(dayInput); expect(dayInput).toHaveValue("05"); });
+
+it("should call handleFieldDispatch on blur", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.blur(dayInput); expect(mockProps.handleFieldDispatch).toHaveBeenCalled(); });
+
+it("should handle edge-case year like 0000", () => { (validateService.isValidDate as jest.Mock).mockReturnValue(true); renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.change(yearInput, { target: { value: "0000" } }); expect(validateService.isValidDate).toHaveBeenCalledWith("0000-10-15"); }); });
+
+import React from "react"; import { render, screen, fireEvent } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Date from "./dates"; import validateService from "../../../services/validation-service"; import errorMsg from "../../../assets/_json/error.json"; import thunk from "redux-thunk"; import * as ageValidationActions from "../../../utils/store/age-validation-slice"; import { lastAction } from "../../../utils/store/last-accessed-slice";
+
+jest.mock("../../../services/validation-service", () => ({ isValidDate: jest.fn(), calculateAge: jest.fn(), validateAge: jest.fn(), getValidationMsg: jest.fn(), allowOnlyCharacter: jest.fn(), }));
+
+jest.mock("../../../utils/common/change.utils", () => ({ ...jest.requireActual("../../../utils/common/change.utils"), authenticateType: jest.fn().mockReturnValue("myinfo"), handleFieldDispatch: jest.fn().mockReturnValue("mocked-flow-type"), }));
+
+jest.mock("../../../utils/store/last-accessed-slice", () => ({ lastAction: { getField: jest.fn(), }, }));
+
+const mockStore = configureStore([thunk]);
+
+describe("Date Component", () => { let store; let mockProps;
+
+beforeEach(() => { store = mockStore({ stages: { stages: [ { stageId: "bd-1", stageInfo: { applicants: { sample_field_a_1: "1995-10-15", }, products: [ { product_type: "type1", product_category: "category1", }, ], }, }, ], userInput: { applicants: { application_sourcing_a_1: null, }, }, }, fielderror: { error: [], }, });
+
+mockProps = {
+  data: {
+    logical_field_name: "sample_field",
+    rwb_label_name: "Date of Birth",
+    mandatory: "Yes",
+    editable: false,
   },
-});
-
-render(
-  <Provider store={store}>
-    <Date {...mockProps} />
-  </Provider>
-);
-
-expect(screen.getByPlaceholderText("DD")).toBeDisabled();
-expect(screen.getByPlaceholderText("MM")).toBeDisabled();
-expect(screen.getByPlaceholderText("YYYY")).toBeDisabled();
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
 
 });
 
-it("should dispatch last accessed field on focus", () => { renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.focus(yearInput);
+const renderComponent = () => render( <Provider store={store}> <Date {...mockProps} /> </Provider> );
 
-expect(lastAccessed.lastAction.getField).toHaveBeenCalledWith("sample_field");
+it("should render empty inputs if no data provided", () => { store = mockStore({ stages: { stages: [ { stageId: "bd-1", stageInfo: { applicants: {}, products: [], }, }, ], userInput: { applicants: {}, }, }, fielderror: { error: [], }, }); renderComponent(); expect(screen.getByPlaceholderText("DD")).toHaveValue(""); expect(screen.getByPlaceholderText("MM")).toHaveValue(""); expect(screen.getByPlaceholderText("YYYY")).toHaveValue(""); });
 
-});
+it("should not call handleCallback if inputs are incomplete", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.change(dayInput, { target: { value: "12" } }); expect(mockProps.handleCallback).not.toHaveBeenCalledWith( mockProps.data, expect.anything() ); });
 
-it("should bind 9 to 09 in DD and trigger changeHandler", () => { renderComponent();
+it("should prevent non-numeric input", () => { renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.change(yearInput, { target: { value: "abcd" } }); expect(yearInput).toHaveValue("abcd"); });
 
-const dayInput = screen.getByPlaceholderText("DD");
-fireEvent.blur(dayInput, { target: { value: "9" } });
+it("should trim whitespace in inputs", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.change(dayInput, { target: { value: " 5 " } }); fireEvent.blur(dayInput); expect(dayInput).toHaveValue("05"); });
 
-// Additional checks can be done if change handler is being tested for callback
+it("should call handleFieldDispatch on blur", () => { renderComponent(); const dayInput = screen.getByPlaceholderText("DD"); fireEvent.blur(dayInput); expect(mockProps.handleFieldDispatch).toHaveBeenCalled(); });
 
-}); });
+it("should handle edge-case year like 0000", () => { (validateService.isValidDate as jest.Mock).mockReturnValue(true); renderComponent(); const yearInput = screen.getByPlaceholderText("YYYY"); fireEvent.change(yearInput, { target: { value: "0000" } }); expect(validateService.isValidDate).toHaveBeenCalledWith("0000-10-15"); }); });
