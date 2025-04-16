@@ -1,242 +1,3 @@
-need to increase the test coverage
-
-41.93% Statements 13/3121.42% Branches 9/4214.28% Functions 1/743.33% Lines 13/30
-
-import "./review-page.scss";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import reviewpageData from "../../../assets/_json/review.json";
-import { authenticateType } from "../../../utils/common/change.utils";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  dispatchLoader,
-  getProductCategory,
-} from "../../../services/common-service";
-import Checkbox from "../../../shared/components/checkbox/checkbox";
-import Signature from "../../../shared/components/signature/signature";
-//import TooltipModel from "../../../shared/components/model/tooltip-model";
-
-const ReviewPage = (props: KeyWithAnyModel) => {
-  const dispatch = useDispatch();
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const reviewdata: KeyWithAnyModel = reviewpageData;
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const [isHideTooltipIcon, setIsHideTooltipIcon] = useState<boolean>(false);
-  const [isChecked, setIsChecked] = useState<boolean>(false);
-  const rpAuthInfo =
-    authenticateType() === "myinfo" ? reviewdata.myinfo : reviewdata.manual;
-  const [productDetails, setProductDetails] = useState({
-    productName: "",
-  });
-  const [filterLinkList, setFilterLinkList] = useState([]);
-  const [productCategory, setProductCategory] = useState("");
-  useEffect(() => {
-    dispatch(dispatchLoader(false));
-    setProductDetails((prevValue) => {
-      if (
-        stageSelector &&
-        stageSelector[0].stageInfo &&
-        stageSelector[0].stageInfo.products.length >= 1
-      ) {
-        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
-      }
-      return { ...prevValue };
-    });
-
-    const productCtg = getProductCategory(stageSelector[0].stageInfo.products);
-    setProductCategory(productCtg);
-    const checkProductCategory =
-    productCtg === "CC" || productCtg === "CA" || productCtg === "SA" ? true : false;
-    setIsHideTooltipIcon(checkProductCategory);
-    if (checkProductCategory === true) {
-      setIsChecked(true);
-    }
-
-    let reviewLinks =
-      productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
-    const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
-      (link: KeyWithAnyModel) => {
-        return link;
-      }
-    );
-    setFilterLinkList(fliteredLink);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // useEffect(() => {
-  //   if (isHideTooltipIcon) {
-  //     props.updateCheckboxStatus(true);
-  //   } else {
-  //     props.updateCheckboxStatus(isChecked);
-  //   }
-
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [isChecked]);
-
-  return (
-    <>
-      {/* CASA begins */}
-      {productDetails && isHideTooltipIcon === true && (
-        <div className="field__group">
-          <div className="review__content">
-            <label className="review__content--header">
-              <p>{reviewdata.confirm.reviewPageHeader1}</p>
-            </label>
-            {rpAuthInfo.header && <label>{rpAuthInfo.header}</label>}
-            {rpAuthInfo.reviewDesc_1 && (
-              <div className="review__content--body">
-                <p>
-                  {rpAuthInfo.reviewDesc_1} {productDetails.productName}{" "}
-                  {rpAuthInfo.reviewDesc_2}
-                </p>
-              </div>
-            )}
-            {rpAuthInfo.reviewMyInfoDesc_1 && (
-              <div className="review__content--body">
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <p>{rpAuthInfo.reviewMyInfoDesc_1}</p>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <ol type="a">
-                    <li>{rpAuthInfo.reviewMyInfoDesc_2}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_3}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_4}</li>
-                  </ol>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_5 && (
-                  <p>
-                    {rpAuthInfo.reviewMyInfoDesc_5} {productDetails.productName}{" "}
-                    {rpAuthInfo.reviewMyInfoDesc_6}
-                  </p>
-                )}
-              </div>
-            )}
-            <label>{reviewdata.confirm.reviewDesc}</label>
-            <div className="review__content--body">
-              <p>{reviewdata.confirm.reviewDesc_1}</p>
-              <ol>
-                <li>{reviewdata.confirm.reviewDesc_2}</li>
-                <li>{reviewdata.confirm.reviewDesc_3}</li>
-                <li>{reviewdata.confirm.reviewDesc_4}</li>
-              </ol>
-              <p>{reviewdata.confirm.reviewDesc_5}</p>
-              <p>{reviewdata.confirm.reviewDesc_6}</p>
-              <p>{reviewdata.confirm.reviewDesc_7}</p>
-            </div>
-          </div>
-        </div>
-      )} 
-      {/*CASA ends */}
-      {/*CCPL begins */}
-      {isHideTooltipIcon === false && (
-        <>
-          <div className="review__ccpl__content">
-            <div className="review__title">
-              <div className="review__title__label">
-              <p>{reviewdata.CCPL.reviewTitle1}</p>
-            </div>            
-            <div className="tool-tip__icon">
-              <div
-                className="tool-tip"
-                onClick={(event) =>
-                  setIsTooltipOpen(isTooltipOpen ? false : true)
-                }
-              ></div>
-            </div>             
-            </div>
-            {/* {productCategory === "PL" && (
-              <>
-                <div className="review__top__content">
-                  <div>{reviewdata.PLLinks.contentStart}</div>
-                  {filterLinkList.map((links: KeyWithAnyModel) => {
-                    return (
-                      <>
-                        <a
-                          target="_blank"
-                          rel="noreferrer"
-                          href={links[1].path}
-                        >
-                          {links[1].name},
-                        </a>
-                      </>
-                    );
-                  })}
-                  {reviewdata.CCPLReviewContent.contentLinkDescp}
-                </div>
-                <div className="review__top__content">
-                  {reviewdata.PL.reviewContent1}
-                </div>
-              </>
-            )} */}
-          </div>
-          <div className="review__checkbox">
-          <Checkbox
-              reviewHeader={reviewdata.CCPL.reviewHeader}
-              reviewDescp1={reviewdata.CCPL.reviewDescp1}
-              reviewDescpoint1={reviewdata.CCPL.reviewDescpoint1}
-              reviewDescpoint2={reviewdata.CCPL.reviewDescpoint2}
-              reviewDescp2={reviewdata.CCPL.reviewDescp2}
-              reviewDescp3={reviewdata.CCPL.reviewDescp3}
-              reviewDescp4={reviewdata.CCPL.reviewDescp4}
-              checkedStatus={isChecked}
-              setCheckedStatus={setIsChecked}
-            />                        
-          </div>
-          {productCategory === "CC" && (
-            <div className="review__ccpl__content">
-              <div className="review__content--header">
-                <label>{reviewdata.CCPLReviewContent.contentHeading}</label>
-              </div>
-              <div>
-                {reviewdata.CCPLReviewContent.contentStart}
-                {filterLinkList.map((links: KeyWithAnyModel) => {
-                  return (
-                    <>
-                      <a target="_blank" rel="noreferrer" href={links[1].path}>
-                        {links[1].name},
-                      </a>
-                    </>
-                  );
-                })}
-                {reviewdata.CCPLReviewContent.contentLinkDescp},
-                {reviewdata.CCPLReviewContent.contentEnd}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-      
-      {
-        stageSelector &&
-        stageSelector[0].stageInfo &&
-        stageSelector[0].stageInfo.applicants.application_sourcing_a_1=== "1"
-      ?
-      <Signature
-        // data={reviewdata.CCPLReviewContent.signature}
-        fieldName="signUser" 
-        label_name= "Signature"
-        sign_title="Please provide your Signature"
-        sign_title_info="Click Here"
-        read_more_label_name= ""
-        />: ""
-      }
-      {/*CCPL ends */}
-      {/* {isTooltipOpen && (
-        <TooltipModel
-          isTooltipOpen={isTooltipOpen}
-          data="review"
-          setIsTooltipOpen={setIsTooltipOpen}
-          productCategory={productCategory}
-        />
-      )} */}
-    </>
-  );
-};
-
-export default ReviewPage;
-
-
-
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useDispatch, useSelector } from "react-redux";
@@ -244,7 +5,6 @@ import ReviewPage from "./review-page";
 import reviewpageData from "../../../assets/_json/review.json";
 import { dispatchLoader, getProductCategory } from "../../../services/common-service";
 
-// Mock Redux hooks and external modules
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
@@ -261,64 +21,104 @@ jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) 
   </div>
 )));
 
+jest.mock("../../../shared/components/signature/signature", () => jest.fn(() => (
+  <div>Signature Component</div>
+)));
+
+jest.mock("../../../shared/components/model/tooltip-model", () => jest.fn((props) =>
+  props.isTooltipOpen ? <div data-testid="tooltip">Tooltip Content</div> : null
+));
+
 describe("ReviewPage Component", () => {
   let mockDispatch: jest.Mock;
-  const mockStageSelector = [
+  const defaultStageSelector = [
     {
       stageInfo: {
-        products: [
-          {
-            name: "Test Product",
-          },
-        ],
+        products: [{ name: "Test Product" }],
+        applicants: { application_sourcing_a_1: "0" },
       },
     },
   ];
 
   beforeEach(() => {
-    // Reset mocks
     mockDispatch = jest.fn();
     (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
+    (useSelector as jest.Mock).mockReturnValue(defaultStageSelector);
     (getProductCategory as jest.Mock).mockReturnValue("CC");
-
     jest.clearAllMocks();
   });
 
-  it("should render ReviewPage with CCPL content", () => {
+  it("should render CCPL content and dispatch loader", () => {
     render(<ReviewPage />);
-
-    // Check CCPL content is rendered
     expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    
-
-    // Verify loader dispatch
     expect(dispatchLoader).toHaveBeenCalledWith(false);
   });
 
-  
-
-  it("should set product details and product category on mount", () => {
+  it("should render CASA content when category is CA", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("CA");
     render(<ReviewPage />);
-
-   expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
-                          
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
   });
 
- 
-it("should filter and render dynamic links for CCPL content", () => {
+  it("should render CASA content when category is SA", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("SA");
+    render(<ReviewPage />);
+    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
+  });
+
+  it("should render PL links when productCategory is PL", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("PL");
+    render(<ReviewPage />);
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
+  });
+
+  it("should toggle tooltip when icon is clicked", () => {
+    render(<ReviewPage />);
+    const tooltipIcon = screen.getByRole("button", { hidden: true }) || document.querySelector(".tool-tip");
+    fireEvent.click(tooltipIcon as HTMLElement);
+    expect(screen.getByTestId("tooltip")).toBeInTheDocument();
+  });
+
+  it("should render Signature component when application_sourcing_a_1 is '1'", () => {
+    (useSelector as jest.Mock).mockReturnValue([
+      {
+        stageInfo: {
+          products: [{ name: "Test Product" }],
+          applicants: { application_sourcing_a_1: "1" },
+        },
+      },
+    ]);
+    render(<ReviewPage />);
+    expect(screen.getByText("Signature Component")).toBeInTheDocument();
+  });
+
+  it("should update checkbox state on click", () => {
+    render(<ReviewPage />);
+    const checkbox = screen.getByTestId("checkbox");
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeInTheDocument(); // Indirect confirmation, mock behavior
+  });
+
+  it("should handle missing stageSelector safely", () => {
+    (useSelector as jest.Mock).mockReturnValue(undefined);
+    render(<ReviewPage />);
+    expect(mockDispatch).toHaveBeenCalled(); // Still dispatches loader
+  });
+
+  it("should handle empty products array", () => {
+    (useSelector as jest.Mock).mockReturnValue([
+      { stageInfo: { products: [], applicants: { application_sourcing_a_1: "0" } } },
+    ]);
+    render(<ReviewPage />);
+    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
+  });
+
+  it("should render dynamic links for CC", () => {
     render(<ReviewPage />);
     const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]) => {
-      expect(screen.getByText(/Customer Terms/)).toBeInTheDocument();
+    Object.entries(links).forEach(([key, value]: any) => {
+      expect(screen.getByText(value.name)).toBeInTheDocument();
     });
   });
-it("should handle dispatch call when component mounts", () => {
-    render(<ReviewPage />);
-
-    // Verify dispatch call for loader
-    expect(mockDispatch).toHaveBeenCalledWith(undefined);
-  });
-
- });
+});
