@@ -1,124 +1,564 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-import { dispatchLoader, getProductCategory } from "../../../services/common-service";
+import {
+  KeyWithAnyModel,
+  LovInputModel,
+  LovInputValModel,
+  StoreModel,
+} from "../../../utils/model/common-model";
+import "./multi-selection-box.scss";
+import {
+  fieldError,
+  isFieldUpdate,
+  isMyinfoField,
+  fieldIdAppend,
+  getUrl,
+} from "../../../utils/common/change.utils";
+import { ValueUpdateAction } from "../../../utils/store/value-update-slice";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
 
-jest.mock("react-redux", () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
+const MultiSelectionBox = (props: KeyWithAnyModel) => {
+  const [errors, setErrors] = useState(false);
+  const lovSelector = useSelector((state: StoreModel) => state.lov);
+  const [selectedOption, setSelectedOption] = useState<Array<LovInputValModel>>(
+    []
+  );
+  const fieldErrorSelector = useSelector(
+    (state: StoreModel) => state.fielderror.error
+  );
+  const myInfoResponseSelector = useSelector(
+    (state: StoreModel) => state.stages.myinfoResponse
+  );
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const userInputSelector = useSelector((state: StoreModel) => state.stages.userInput);
+  const [show, hide] = useState(false);
+  const [update, setUpdate] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<Array<LovInputValModel>>(
+    []
+  );
+  const [isMyinfo, setIsMyinfo] = useState(false);
+  const [search, setSearch] = useState("");
+  const [maxCount, setMaxCount] = useState(false);
+  const [minCount, setMinCount] = useState(true);
+  const [initialValue, setInitialValue] = useState<Array<LovInputValModel>>([]);
+  const dispatch = useDispatch();
+  const max_selects = parseInt(props.data.max_selects);
+  let mandatoryAdditional: string[] = [] ;
 
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(),
-}));
+  useEffect(() => {
+    const data = isMyinfoField(
+      myInfoResponseSelector,
+      props.data.logical_field_name
+    );
+    setIsMyinfo(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myInfoResponseSelector]);
 
-jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
-  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
-    Checkbox
-  </div>
-)));
+  useEffect(() => {
+    const currentFieldLovRes: Array<KeyWithAnyModel> = lovSelector.lov.filter(
+      (res: LovInputModel) => {
+        return res.label === props.data.logical_field_name;
+      }
+    );
+    let preSelectedCode: string | null = null;
+    const userInputResponse = userInputSelector.applicants[fieldIdAppend(props)];
+    // const fieldValue = userInputResponse ? userInputResponse : stageSelector[0].stageInfo.applicants[fieldIdAppend(props)];
+    let fieldValue = "";
+    if (userInputResponse) {
+      fieldValue = userInputResponse;
+    } else {
+      const updatedStageStore = getUrl.getUpdatedStage();
+      const stageApplicant = updatedStageStore.updatedStageInputs.find(
+        (ref: any) => ref && ref.stageId === stageSelector[0].stageId
+      );
+      if (stageApplicant) {
+        if (
+          stageApplicant.applicants[fieldIdAppend(props)] !== undefined &&
+          stageApplicant.applicants[fieldIdAppend(props)] !== null
+        ) {
+          fieldValue = stageApplicant.applicants[fieldIdAppend(props)];
+        } else if (
+          stageSelector[0].stageInfo.applicants[fieldIdAppend(props)]
+        ) {
+          fieldValue =
+            stageSelector[0].stageInfo.applicants[fieldIdAppend(props)];
+        }
+      } else {
+        fieldValue =
+          stageSelector[0].stageInfo.applicants[fieldIdAppend(props)];
+      }
+    }
+    if (fieldValue) {
+      preSelectedCode = fieldValue;
+    }
+    if (currentFieldLovRes.length > 0) {
+      let dropDownData = JSON.parse(
+        JSON.stringify(currentFieldLovRes[0].value)
+      );
+      let preSelectedVal: any = null;
+      if (preSelectedCode) {
+        preSelectedVal = preSelectedCode.includes(",")
+          ? preSelectedCode.split(",")
+          : [preSelectedCode];
+      }
 
-jest.mock("../../../shared/components/signature/signature", () => jest.fn(() => (
-  <div>Signature Component</div>
-)));
-
-jest.mock("../../../shared/components/model/tooltip-model", () => jest.fn((props) =>
-  props.isTooltipOpen ? <div data-testid="tooltip">Tooltip Content</div> : null
-));
-
-describe("ReviewPage Component", () => {
-  let mockDispatch: jest.Mock;
-  const defaultStageSelector = [
-    {
-      stageInfo: {
-        products: [{ name: "Test Product" }],
-        applicants: { application_sourcing_a_1: "0" },
-      },
-    },
-  ];
-
-  beforeEach(() => {
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(defaultStageSelector);
-    (getProductCategory as jest.Mock).mockReturnValue("CC");
-    jest.clearAllMocks();
-  });
-
-  it("should render CCPL content and dispatch loader", () => {
-    render(<ReviewPage />);
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    expect(dispatchLoader).toHaveBeenCalledWith(false);
-  });
-
-  it("should render CASA content when category is CA", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("CA");
-    render(<ReviewPage />);
-    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
-  });
-
-  it("should render CASA content when category is SA", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("SA");
-    render(<ReviewPage />);
-    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
-  });
-
-  it("should render PL links when productCategory is PL", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("PL");
-    render(<ReviewPage />);
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
-  });
-
-  it("should toggle tooltip when icon is clicked", () => {
-    render(<ReviewPage />);
-    const tooltipIcon = screen.getByRole("button", { hidden: true }) || document.querySelector(".tool-tip");
-    fireEvent.click(tooltipIcon as HTMLElement);
-    expect(screen.getByTestId("tooltip")).toBeInTheDocument();
-  });
-
-  it("should render Signature component when application_sourcing_a_1 is '1'", () => {
-    (useSelector as jest.Mock).mockReturnValue([
-      {
-        stageInfo: {
-          products: [{ name: "Test Product" }],
-          applicants: { application_sourcing_a_1: "1" },
+      const result = dropDownData.reduce(
+        (prev: Array<LovInputValModel>, acc: LovInputValModel) => {
+          if (preSelectedVal) {
+            preSelectedVal.forEach((item: any) => {
+              if (acc.CODE_VALUE === item) {
+                acc.checked = true;
+                prev.push(acc);
+              }
+            });
+          }
+          return prev;
         },
-      },
-    ]);
-    render(<ReviewPage />);
-    expect(screen.getByText("Signature Component")).toBeInTheDocument();
-  });
+        []
+      );
 
-  it("should update checkbox state on click", () => {
-    render(<ReviewPage />);
-    const checkbox = screen.getByTestId("checkbox");
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeInTheDocument(); // Indirect confirmation, mock behavior
-  });
+      setSelectedOption(dropDownData);
+      setSelectedValue(result);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageSelector, lovSelector.lov, props.data.logical_field_name]);
 
-  it("should handle missing stageSelector safely", () => {
-    (useSelector as jest.Mock).mockReturnValue(undefined);
-    render(<ReviewPage />);
-    expect(mockDispatch).toHaveBeenCalled(); // Still dispatches loader
-  });
+  useEffect(() => {
+    setErrors(fieldError(fieldErrorSelector, props));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldErrorSelector]);
 
-  it("should handle empty products array", () => {
-    (useSelector as jest.Mock).mockReturnValue([
-      { stageInfo: { products: [], applicants: { application_sourcing_a_1: "0" } } },
-    ]);
-    render(<ReviewPage />);
-    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
-  });
+  const dropdownHandler = (event: React.MouseEvent<any>) => {
+    event.currentTarget.firstChild.focus();
+    hide(true);
+    const selectedValueInitVal = [...selectedValue];
+    setInitialValue(selectedValueInitVal);
+  };
 
-  it("should render dynamic links for CC", () => {
-    render(<ReviewPage />);
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]: any) => {
-      expect(screen.getByText(value.name)).toBeInTheDocument();
+  const close = () => {
+    setMinCount(true);
+    hide(false);
+    setUpdate((prev: boolean) => !prev);
+    setSearch("");
+    setMaxCount(false);
+
+    setSelectedValue(initialValue);
+    setSelectedOption((prev: Array<LovInputValModel>) => {
+      let lovObj = prev.map((item: LovInputValModel) => {
+        item.checked = false;
+        return item;
+      });
+      initialValue.forEach((response: LovInputValModel) => {
+        const lovIndex = lovObj.findIndex(
+          (item: LovInputValModel) => item.CODE_VALUE === response.CODE_VALUE
+        );
+        if (lovIndex >= 0) {
+          lovObj[lovIndex].checked = true;
+        }
+      });
+      return lovObj;
     });
-  });
-});
+  };
+
+  const continueBtn = () => {
+    if (!(maxCount || minCount)) {
+      const prevValue =
+        stageSelector[0].stageInfo.applicants[fieldIdAppend(props)];
+      if (prevValue) {
+        const prevArrObj = prevValue.includes(",")
+          ? prevValue.split(",")
+          : [prevValue];
+        const selectedObj = selectedValue.reduce((prev: any, acc: any) => {
+          prev.push(acc.CODE_VALUE);
+          return prev.sort();
+        }, []);
+        if (prevArrObj.sort().toString() !== selectedObj.toString()) {
+          dispatch(
+            ValueUpdateAction.getChangeUpdate({
+              id: stageSelector[0].stageId,
+              changes: true,
+            })
+          );
+        }
+      } else {
+        dispatch(
+          ValueUpdateAction.getChangeUpdate({
+            id: stageSelector[0].stageId,
+            changes: true,
+          })
+        );
+      }
+
+      if (selectedValue.length > max_selects) {
+        setMaxCount(true);
+        setMinCount(false);
+      } else if (!(selectedValue.length > 0)) {
+        hide(true);
+      } else {
+        setUpdate((prev: boolean) => !prev);
+        setMaxCount(false);
+        hide(false);
+      }
+    }
+  };
+
+  const addUserInput = (data: LovInputValModel, event: any) => {
+    const previousSelectedOption = [...selectedOption];
+    const updatedSelectedOption = previousSelectedOption.map(
+      (item: LovInputValModel) => {
+        if (item.CODE_DESC === data["CODE_DESC"]) {
+          item["checked"] = !item["checked"];
+        }
+        return item;
+      }
+    );
+    setSelectedOption(updatedSelectedOption);
+
+    setSelectedValue((prevUser: Array<LovInputValModel>) => {
+      const isExits = prevUser.find(
+        (item: LovInputValModel) => item.CODE_VALUE === data["CODE_VALUE"]
+      );
+      if (!isExits && event.target.checked) {
+        prevUser.push(data);
+      } else {
+        if (!event.target.checked) {
+          const fieldIndex = prevUser.findIndex(
+            (item: LovInputValModel) => item.CODE_VALUE === data["CODE_VALUE"]
+          );
+          prevUser.splice(fieldIndex, 1);
+        }
+      }
+      if (!(prevUser.length > max_selects)) {
+        if (!(prevUser.length > 0)) {
+          setMinCount(true);
+        } else {
+          setMaxCount(false);
+          setMinCount(false);
+        }
+      }
+      return prevUser;
+    });
+  };
+
+  const removeSelectedValues = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    data: LovInputValModel
+  ) => {
+    event.stopPropagation();
+    event.isPropagationStopped();
+
+    const previousSelectedValue = [...selectedValue];
+
+    let fieldIndex = previousSelectedValue.findIndex(
+      (item: LovInputValModel) => item.CODE_VALUE === data["CODE_VALUE"]
+    );
+    if (fieldIndex !== -1) {
+      previousSelectedValue.splice(fieldIndex, 1);
+    }
+    setSelectedValue(previousSelectedValue);
+
+    const previousSelectedOption = [...selectedOption];
+    const result = previousSelectedOption.map((item: LovInputValModel) => {
+      if (item.CODE_VALUE === data["CODE_VALUE"]) {
+        item["checked"] = !item["checked"];
+      }
+      return item;
+    });
+    setSelectedOption(result);
+    if(stageSelector[0].stageId !== 'ssf-1') {
+      dispatch(
+        ValueUpdateAction.getChangeUpdate({
+          id: stageSelector[0].stageId,
+          changes: previousSelectedValue.length > 0 ? true : false,
+        })
+      );  
+    }
+    //remove selected other address at personal details page -bd-2
+    if(props.data.logical_field_name==="select_alt_addresses"){
+      dispatch(stagesAction.removeAddToggleField({
+        removeFields:["select_alt_addresses"],
+        newFields:[]
+      }))
+    }
+    if(props.data.logical_field_name === "select_alt_contacts" && stageSelector[0].stageId === "bd-3" && previousSelectedValue.length === 0) {
+      dispatch(stagesAction.removeAddToggleField({
+        removeFields:["select_alt_contacts"],
+        newFields:[]
+      }))
+    }
+  };
+
+  useEffect(() => {
+    setErrors(false);
+    if (selectedValue.length > 0) {
+      setMinCount(false);
+    }
+    const val =
+      selectedValue &&
+      selectedValue.reduce((prev: Array<string>, acc: LovInputValModel) => {
+        prev.push(acc.CODE_VALUE);
+        return prev;
+      }, []);
+    if (props.data.mandatory === "Yes") {
+      props.handleCallback(props.data, val.toString());
+    }
+    if(val.length > 0) {
+      dispatch(
+        isFieldUpdate(props, val.toString(), props.data.logical_field_name)
+      );  
+    } else if(props.data.logical_field_name === 'account_currency_9' && getUrl.getUpdatedStage().currentStage !== 'ssf-2') {
+      dispatch(
+        isFieldUpdate(props, val.toString(), props.data.logical_field_name)
+      );
+    } else if(props.data.logical_field_name === 'nationality_add') {
+      dispatch(
+        isFieldUpdate(props, val.toString(), props.data.logical_field_name)
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedValue, update]);
+
+  const searchFilter = (item: LovInputValModel) => {
+    if (search !== "") {
+      return item.CODE_DESC.toLowerCase().includes(search.toLowerCase());
+    } else {
+      return item.CODE_DESC;
+    }
+  };
+  const focusHandler = (fieldName: string, event: React.FocusEvent<HTMLInputElement>) => {
+    dispatch(lastAction.getField(fieldName))
+  }
+
+  useEffect(() => {
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="PER"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["per_country","per_postal_code","per_block","per_street_name"],
+          value: ""
+        })
+      );
+    }
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="AL1"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["alt_country_1","alt_postal_code_1","alt_block_1","alt_street_name_1"],
+          value: ""
+        })
+      );
+    }
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="AL2"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["alt_country_2","alt_postal_code_2","alt_block_2","alt_street_name_2"],
+          value: ""
+        })
+      );
+    }
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="AL3"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["alt_country_3","alt_postal_code_3","alt_block_3","alt_street_name_3"],
+          value: ""
+        })
+      );
+    }
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="AL4"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["alt_country_4","alt_postal_code_4","alt_block_4","alt_street_name_4"],
+          value: ""
+        })
+      );
+    }
+    if(userInputSelector.applicants["select_alt_addresses_a_1"]==="AL5"){  
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: ["alt_country_5","alt_postal_code_5","alt_block_5","alt_street_name_5"],
+          value: ""
+        })
+      );
+    }
+   
+    },[userInputSelector.applicants["select_alt_addresses_a_1"]])
+
+    useEffect(()=>{
+      if (userInputSelector.applicants.select_alt_contacts_a_1) {
+        const displayFields = userInputSelector.applicants.select_alt_contacts_a_1.split(",");
+        console.log("displayFields", displayFields)
+        // Define a mapping for dynamic handling
+        const fieldMapping: Record<string, string[]> = {
+          MO1: ["mobile_1", "mobile_1_add"],
+          MO2: ["mobile_2", "mobile_2_add"],
+          MF1: ["overseas_mobile1_contact_no", "overseas_mobile1"],
+          MF2: ["overseas_mobile2_contact_no", "overseas_mobile2"],
+          OF1: ["ofc1_number", "ofc1"],
+          OF2: ["ofc2_number", "ofc2"],
+          RT2: ["home_phone2_number", "home_phone2"],
+          OT1: ["office_phone1_number", "office_phone1"],
+          OT2: ["office_phone2_number", "office_phone2"],
+          RF1: ["ohph1_number", "ohph1"],
+          RF2: ["ohph2_number", "ohph2"],
+        };
+        // Iterate over the fieldMapping keys to handle both inclusion and exclusion dynamically
+        Object.keys(fieldMapping).forEach((field) => {
+          const fields = fieldMapping[field];
+          if (displayFields.includes(field) && !mandatoryAdditional.includes(field)) {
+            // Handle inclusion: Add mandatory fields and toggle them
+            console.log("Hello")
+            dispatch(fieldErrorAction.getMandatoryFields(fields));
+            dispatch(
+              stagesAction.removeAddToggleField({
+                removeFields: [],
+                newFields: fields,
+                value: "",
+              })
+            );
+            mandatoryAdditional.push(field);
+          } else {
+            debugger
+            console.log(fields)
+            // Handle exclusion: Remove fields if not included
+            //dispatch(fieldErrorAction.removeMandatoryFields(fields));
+            dispatch(
+              stagesAction.removeAddToggleField({
+                removeFields: fields,
+                newFields: [],
+                //value: "",
+              })
+            );
+          }
+          console.log('mandatoryAdditional',mandatoryAdditional)
+        });
+      } else {
+        dispatch(
+          stagesAction.removeAddToggleField({
+            removeFields: ["mobile_1", "mobile_1_add", "mobile_2", "mobile_2_add", 
+            "overseas_mobile1_contact_no", "overseas_mobile1", "overseas_mobile2_contact_no", 
+            "overseas_mobile2", "ofc1_number", "ofc1", "ofc2_number", "ofc2", "home_phone2_number", "home_phone2",
+            "office_phone1_number", "office_phone1", "office_phone2_number", "office_phone2", "ohph1_number", "ohph1",
+            "ohph2_number", "ohph2"],
+            newFields: [],
+            value: "",
+          })
+        );
+      }
+    },[userInputSelector.applicants.select_alt_contacts_a_1])
+
+  return (
+    <>
+      <div className="multi-select">
+        <label htmlFor={props.data.logical_field_name}>
+          {props.data.rwb_label_name}
+        </label>
+        <div
+          className={`multi-select__field ${
+            (isMyinfo || props.data.editable) && (stageSelector[0].stageId !== 'ssf-1') ? "disabled" : ""
+          }`}
+          onClick={(e) => dropdownHandler(e)}
+          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
+        >
+          {selectedValue &&
+            selectedValue.length > 0 &&
+            selectedValue.map((item: LovInputValModel) => {
+              return (
+                <span
+                  className="multi-select__fieldlabel"
+                  key={item.CODE_VALUE}
+                >
+                  <span>{item.CODE_DESC}</span>
+                  <span
+                    className="multi-close"
+                    onClick={(
+                      event: React.MouseEvent<HTMLDivElement, MouseEvent>
+                    ) => removeSelectedValues(event, item)}
+                  ></span>
+                </span>
+              );
+            })}
+          {!(selectedValue && selectedValue.length > 0) && (
+            <input
+              type="text"
+              className="dropdown-select__input"
+              id={fieldIdAppend(props)}
+              placeholder={props.data.rwb_label_name}
+              onChange={() => {
+                //do nothing
+              }}
+            />
+          )}
+        </div>
+        {errors && (
+        <span className="error-msg">
+          Please enter {props.data.rwb_label_name}
+        </span>
+      )}
+        {show && selectedOption && (
+          <div className="multi-select__background">
+            <div className="dropdown-select__bg-curve"></div>
+            <div className="multi-select__popup">
+              <div className="multi-select__header">
+                <div>{props.data.rwb_label_name}</div>
+                <div className="close" data-testid="close" onClick={close}></div>
+              </div>
+              <div className="multi-select__search">
+                <input
+                  autoFocus
+                  name="search"
+                  type="search"
+                  placeholder="Search"
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+              {maxCount && (
+                <div className="max-count">
+                  *You have selected maximum options for{" "}
+                  {props.data.logical_field_name}
+                </div>
+              )}
+              <div className="multi-select__expand">
+                {selectedOption
+                  .filter(searchFilter)
+                  .map((item: LovInputValModel, index: number) => {
+                    return (
+                      <div key={index} className="multi-select__item">
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          onChange={(event) => addUserInput(item, event)}
+                          value={item.CODE_VALUE}
+                          id={item.CODE_VALUE}
+                        />
+                        <label htmlFor={item.CODE_VALUE}>
+                          {item.CODE_DESC}
+                        </label>
+                      </div>
+                    );
+                  })}
+              </div>
+              <div className="multi-select__btn">
+                <span
+                  className={`${
+                    maxCount || minCount ? "multi-select__btn--disabled" : ""
+                  }`}
+                  onClick={continueBtn}
+                >
+                  Continue
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export default MultiSelectionBox;
