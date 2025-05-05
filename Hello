@@ -1,77 +1,44 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Phone } from './Phone';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
+it('does not render when hide is true', () => {
+  render(
+    <Provider store={store}>
+      <Phone {...mockProps} hide={true} />
+    </Provider>
+  );
+  expect(screen.queryByPlaceholderText(/mobile number/i)).not.toBeInTheDocument();
+});
 
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
+it('shows validation error when mandatory and left empty', () => {
+  const input = screen.getByPlaceholderText(/mobile number/i);
+  fireEvent.change(input, { target: { value: '' } });
+  fireEvent.blur(input);
+  const error = screen.queryByText(/required/i);
+  expect(error).toBeInTheDocument();
+});
 
-const mockProps = {
-  data: {
-    logical_field_name: 'mobile_number',
-    rwb_label_name: 'Mobile Number',
-    mandatory: 'Yes',
-    editable: true,
-    type: 'text',
-    min_length: 8,
-    length: 17,
-    regex: '^[89]\\d{7}$',
-  },
-  handleCallback: jest.fn(),
-};
+it('validates minimum and maximum length correctly', () => {
+  const input = screen.getByPlaceholderText(/mobile number/i);
 
-const initialState = {
-  lov: { lov: [] },
-  stages: {
-    stages: [{
-      stageId: 'ssf-1',
-      stageInfo: {
-        applicants: {
-          mobile_number_a_1: '6591234567',
-        },
-      }
-    }],
-    userInput: {
-      applicants: {
-        mobile_number_a_1: '91234567',
-        mobile_number_rwb_a_1: '65',
-      },
-    },
-  },
-  fielderror: { error: [] },
-};
+  // Too short
+  fireEvent.change(input, { target: { value: '9123' } });
+  expect(screen.queryByText(/must be at least/i)).toBeInTheDocument();
 
-describe('Phone Component', () => {
-  let store: any;
+  // Too long
+  fireEvent.change(input, { target: { value: '912345678901234567' } });
+  expect(screen.queryByText(/must not exceed/i)).toBeInTheDocument();
+});
 
-  beforeEach(() => {
-    store = mockStore(initialState);
-    render(
-      <Provider store={store}>
-        <Phone {...mockProps} />
-      </Provider>
-    );
-  });
+it('does not allow editing if editable is false', () => {
+  render(
+    <Provider store={store}>
+      <Phone {...mockProps} data={{ ...mockProps.data, editable: false }} />
+    </Provider>
+  );
+  const input = screen.getByPlaceholderText(/mobile number/i);
+  expect(input).toBeDisabled();
+});
 
-  it('renders phone input with correct placeholder', () => {
-    const input = screen.getByPlaceholderText(/mobile number/i);
-    expect(input).toBeInTheDocument();
-  });
-
-  it('updates input value on change and triggers callback', () => {
-    const input = screen.getByPlaceholderText(/mobile number/i);
-    fireEvent.change(input, { target: { value: '91234567' } });
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(expect.anything(), '91234567');
-  });
-
-  it('shows error if input is invalid', () => {
-    const input = screen.getByPlaceholderText(/mobile number/i);
-    fireEvent.change(input, { target: { value: '71234567' } }); // starts with 7, invalid for SG
-    const error = screen.queryByText(/must start with 8 or 9/i);
-    if (error) {
-      expect(error).toBeInTheDocument();
-    }
-  });
+it('displays and handles RWB (country code) dropdown', () => {
+  const dropdown = screen.getByRole('combobox');
+  fireEvent.change(dropdown, { target: { value: '60' } });
+  expect(mockProps.handleCallback).toHaveBeenCalledWith(expect.anything(), '60');
 });
