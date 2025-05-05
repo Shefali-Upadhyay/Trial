@@ -8,22 +8,30 @@ it('does not render when hide is true', () => {
 });
 
 it('shows validation error when mandatory and left empty', () => {
+  render(
+    <Provider store={store}>
+      <Phone {...mockProps} data={{ ...mockProps.data, mandatory: true }} />
+    </Provider>
+  );
   const input = screen.getByPlaceholderText(/mobile number/i);
   fireEvent.change(input, { target: { value: '' } });
   fireEvent.blur(input);
-  const error = screen.queryByText(/required/i);
-  expect(error).toBeInTheDocument();
+  expect(screen.queryByText(/required/i)).toBeInTheDocument();
 });
 
 it('validates minimum and maximum length correctly', () => {
+  render(
+    <Provider store={store}>
+      <Phone {...mockProps} data={{ ...mockProps.data, minLength: 5, maxLength: 10 }} />
+    </Provider>
+  );
+
   const input = screen.getByPlaceholderText(/mobile number/i);
 
-  // Too short
-  fireEvent.change(input, { target: { value: '9123' } });
+  fireEvent.change(input, { target: { value: '9123' } }); // Too short
   expect(screen.queryByText(/must be at least/i)).toBeInTheDocument();
 
-  // Too long
-  fireEvent.change(input, { target: { value: '912345678901234567' } });
+  fireEvent.change(input, { target: { value: '912345678901' } }); // Too long
   expect(screen.queryByText(/must not exceed/i)).toBeInTheDocument();
 });
 
@@ -38,6 +46,11 @@ it('does not allow editing if editable is false', () => {
 });
 
 it('displays and handles RWB (country code) dropdown', () => {
+  render(
+    <Provider store={store}>
+      <Phone {...mockProps} />
+    </Provider>
+  );
   const dropdown = screen.getByRole('combobox');
   fireEvent.change(dropdown, { target: { value: '60' } });
   expect(mockProps.handleCallback).toHaveBeenCalledWith(expect.anything(), '60');
