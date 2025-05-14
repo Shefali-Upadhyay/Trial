@@ -1,0 +1,156 @@
+ADO token: 1MVEifEyzD5S50VEWvAggDmyRWUj0tIjWyre80fTeK9lKQoHcslpJQQJ99BBACAAAAAjwevQAAASAZDO1D99
+ 
+BUNDLE PRODUCTS=>
+
+Repo Link:
+https://dev.azure.com/sc-ado/PDBQPR/_git/50540-rtob-ui-app-sg-green-branch/pullrequestcreate?sourceRef=feature/employmentDetails&targetRef=feature/greenBranch&sourceRepositoryId=611da767-4eed-4947-9578-3e29b5a85c82&targetRepositoryId=611da767-4eed-4947-9578-3e29b5a85c82
+
+Bugs List:
+https://standardcharteredbank-my.sharepoint.com/:x:/r/personal/8213622_zone1_scb_net/_layouts/15/doc2.aspx?sourcedoc=%7B71acb2cf-bd9f-486a-afb9-6b40505b7fde%7D&action=edit&activeCell=%27CC%2BSA%27!F15&wdinitialsession=4b95e83d-4d31-d813-a2db-294f32ca0588&wdrldsc=7&wdrldc=1&wdrldr=AccessTokenExpiredWarningUnauthenticated%2CRefreshin
+
+Test Data:
+https://standardcharteredbank-my.sharepoint.com/:x:/r/personal/8215124_zone1_scb_net/_layouts/15/Doc.aspx?sourcedoc=%7Bd63b5e12-25bd-44b3-99d5-ec11406c5e03%7D&action=view&wdorigin=TEAMS-MAGLEV.p2p_ns.rwc.Sharing.ServerTransfer&wdexp=TEAMS-TREATMENT&wdhostclicktime=1742979542281&wdenableroaming=1&wdodb=1&wdlcid=en-US&wdredirectionreason=Force_SingleStepBoot&wdinitialsession=c753c14c-1c50-e936-b556-74e925d27d6f&wdrldsc=13&wdrldc=2&wdrldr=FileOpenUserUnauthorized%2CDeploymentInvalidEditSess
+
+https://standardcharteredbank-my.sharepoint.com/:x:/g/personal/8213557_zone1_scb_net/EQvJRJ9GuF9IsdUbkTLAlMcBs1LT46HwgCHwmAVweoj8KA?email=SHEFALI.UPADHYAY%40sc.com&wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1743275565678&web=1
+
+https://standardcharteredbank-my.sharepoint.com/:x:/g/personal/8213557_zone1_scb_net/EUpKwVM5a9JFqN9V1VJRzgUBdGYcsatq10wQQtmQ8LWi-Q?email=SHEFALI.UPADHYAY%40sc.com&wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1743275603543&web=1
+
+LOCAL HOST:
+
+CC+CA: http://localhost:3000/onboarding/sgb/ngf-apply.html?products=162,338&campaign=6203,CA001&auth=myinfo
+
+CC+SA: http://localhost:3000/onboarding/sgb/ngf-apply.html?products=164,507&campaign=2507,SA001&auth=myinfo
+
+CC+CC: http://localhost:3000/onboarding/sgb/ngf-apply.html?products=162,164&campaign=6203,2502&auth=myinfo
+
+CC+PL: http://localhost:3000/onboarding/sgb/ngf-apply.html?products=162,280&campaign=6203,9999&auth=myinfo
+ 
+UAT: Our Deployed Code
+
+CC+CA
+https://pt.sc.com/onboarding/sg-lending/index.html?products=162,338&campaign=6203,CA001&auth=myinfo
+
+CC+SA
+https://pt.sc.com/onboarding/sg-lending/index.html?products=164,507&campaign=2507,SA001&auth=myinfo
+
+CC+CC
+https://pt.sc.com/onboarding/sg-lending/index.html?products=162,164&campaign=6203,2502&auth=myinfo
+
+Regression:
+https://origination-test.sc.com/onboarding/sgb/ngf/FFF_products.html
+
+****UAT - compare before starting coding:
+https://pt.sc.com/onboarding/rtob-FFF/apply.html?product=162,338&campaign=6203,CA001&auth=myinfo
+https://pt.sc.com/onboarding/rtob-FFF/apply.html?product=164,507&campaign=2507,SA001&auth=myinfo
+https://pt.sc.com/onboarding/rtob-FFF/apply.html?product=162,164&campaign=6203,2502&auth=myinfo
+
+Reference For React UI:
+https://pt.sc.com/onboarding/ngr/rtoForms/index.html?v=/onboarding?country=SG&products=164&campaign=2502&auth=manual
+
+
+TDMIbada TDMWorth
+1995-08-13
+TDMIbada.1000355572@sc.com
+88496646
+S4236876H
+
+TDMKiran TDMLeBrun
+1984-02-21
+TDMKiran.1000363340@sc.com
+88504415
+S4244644J
+
+NTB manual
+TDMAbraham TDMLuders
+2001-07-17
+TDMAbraham.1000373994@sc.com
+88515078
+S4255299B
+
+NTC manual
+TDMAchyut TDMKepel
+19/12/2000
+TDMAchyut.1000374186@sc.com
+88515270
+S4255491Z
+
+ETC manual
+TDMKundan TDMDwijendr TDMHarting
+2000-08-20
+TDMKundan.1000364408@sc.com
+88505483
+S4245712D
+
+
+NTB
+
+S4245717E
+
+ETC
+
+S4243557J
+
+ECC
+
+S4232393D
+
+S4245725F
+
+S4245726D
+
+S4245727B
+
+S4236875Z
+ 
+ 
+GREENBRANCH =>
+ 
+1405594 / RWBpassword2$ - working in GB SG UAT
+
+1326246 / RWBpassword4$
+
+1592831 / SCBpassword2$
+
+1326246 / RWBpassword5$
+
+UAT:
+https://pt.sc.com/onboarding/multi-country/logingb/#/login
+https://pt.sc.com/onboarding/catalogue/sg_green/forms/index.html?country=SG
+
+REGRESSION:
+https://origination-test.sc.com/onboarding/sgb/login/#/login
+
+LOCAL HOST:
+
+Savings Account
+http://localhost:3000/onboarding/sgb/gb-apply.html?products=508&campaign=SA001&applicantNo=1&rmId=1405594&auth=myinfo
+http://localhost:3000/onboarding/sgb/gb-apply.html?products=334,514&campaign=CA001,SA001&applicantNo=1&rmId=1405594&auth=myinfo
+
+Current Account
+http://localhost:3000/onboarding/sgb/gb-apply.html?products=314&campaign=CA001&applicantNo=1&rmId=1405594&auth=myinfo
+
+Term Deposits
+http://localhost:3000/onboarding/sgb/gb-apply.html?products=617&campaign=SGTD617SGD000001&applicantNo=1&rmId=1405594&auth=myinfo
+
+Test Data :
+https://standardcharteredbank-my.sharepoint.com/:x:/g/personal/1667255_zone1_scb_net1/EcUSl6HUSeVBmk9K1e8LetgBtuekD2FVZnS-3y92LARCHQ?email=SHEFALI.UPADHYAY%40sc.com&wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1742453298931&web=1
+
+https://standardcharteredbank-my.sharepoint.com/:x:/g/personal/8213281_zone1_scb_net/Ee1Gm4eST8NMnqSmMTCQp_kB6-ezB-_m2P_dLAneX35cOg?wdOrigin=TEAMS-MAGLEV.p2p_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1746162882813&web=1
+
+S4255290I - NTB
+S4244647E
+S4240282F - Term Deposits
+S4244645I
+S4255455C - NTC
+S4245712D - ETC
+
+StaffOne Account - 314
+Commodity Account - 317
+Wealth Cash Account - 342
+SuperSalary Account - 318
+
+S4255585A
+FCY Time Deposit - 
+FCY Time Deposit (Staff) - 
+
+509893	1000374280	5646835	TS44605_NTC_DATA_ETB_509893	ETB	S4255585A	Singaporean	MR	TDMMelampus	NULL	TDMBuyle	TDMMelampus TDMBuyle	M	1999-04-16
