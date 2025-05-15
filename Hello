@@ -1,149 +1,25 @@
-// RadioWithLabel.test.tsx
+import axios, { AxiosError } from "axios";
+import { KeyWithAnyModel } from "../../../utils/model/common-model";
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import RadioWithLabel from './RadioWithLabel';
-import * as urlUtils from '../../utils/url';
-import * as productUtils from '../../utils/productUtils';
-import { useFormContext } from 'react-hook-form';
-
-// Mocks
-jest.mock('react-hook-form', () => ({
-  useFormContext: jest.fn(),
-}));
-
-jest.mock('../../utils/url', () => ({
-  getJourneyType: jest.fn(),
-  getUserInputs: jest.fn(),
-}));
-
-jest.mock('../../utils/productUtils', () => ({
-  getProductCategory: jest.fn(),
-}));
-
-const mockStore = configureStore([]);
-
-const createStore = (stage = 'STAGE_1', userInputs = {}, lovData = {}) =>
-  mockStore({
-    stage: { stage },
-    userInput: { userInputs },
-    lov: lovData,
-  });
-
-const mockUseFormContext = (setValue = jest.fn(), getValues = jest.fn(() => ({}))) => {
-  (useFormContext as jest.Mock).mockReturnValue({
-    setValue,
-    getValues,
-    watch: jest.fn(() => ({})),
-  });
-};
-
-describe('RadioWithLabel Component', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (urlUtils.getJourneyType as jest.Mock).mockReturnValue('CAR');
-    (urlUtils.getUserInputs as jest.Mock).mockReturnValue({ brand: 'Toyota' });
-    (productUtils.getProductCategory as jest.Mock).mockReturnValue('AUTO');
-  });
-
-  const renderComponent = (store: any, props = {}) =>
-    render(
-      <Provider store={store}>
-        <RadioWithLabel
-          label="Select Option"
-          name="vehicleType"
-          fieldDependencies={['brand']}
-          options={[
-            { label: 'Sedan', value: 'sedan' },
-            { label: 'SUV', value: 'suv' },
-          ]}
-          {...props}
-        />
-      </Provider>
-    );
-
-  it('renders the label and options', () => {
-    mockUseFormContext();
-    const store = createStore();
-
-    renderComponent(store);
-
-    expect(screen.getByText('Select Option')).toBeInTheDocument();
-    expect(screen.getByLabelText('Sedan')).toBeInTheDocument();
-    expect(screen.getByLabelText('SUV')).toBeInTheDocument();
-  });
-
-  it('does not render if fieldDependencies are not satisfied', () => {
-    mockUseFormContext();
-    (urlUtils.getUserInputs as jest.Mock).mockReturnValue({});
-
-    const store = createStore();
-
-    renderComponent(store);
-
-    expect(screen.queryByText('Select Option')).not.toBeInTheDocument();
-  });
-
-  it('filters options based on LOV data from Redux', () => {
-    mockUseFormContext();
-    const lovData = {
-      vehicleType: [
-        { label: 'Convertible', value: 'convertible' },
-        { label: 'Truck', value: 'truck' },
-      ],
+export const postalCodeValidation = (value:string,channelrefNumber:number,applicants:KeyWithAnyModel):any => {
+  
+  const application = `${process.env.REACT_APP_RTOB_APPLICATION_END_POINT}`;
+  const baseUrl = `${process.env.REACT_APP_RTOB_BASE_URL}`;
+  const postalCode = `${process.env.REACT_APP_RTOB_SINGPOST}`
+  const url = baseUrl+application+channelrefNumber+postalCode+'?zipCode='+value
+   return async () => {
+       return axios
+        .get(url)
+        .then(async (response:any) => {
+          let tmpApplicants:KeyWithAnyModel = {};
+          tmpApplicants['block_rwb_a_1'] = response.data.applicants['block_rwb_a_1']
+          tmpApplicants['building_name_rwb_a_1'] = response.data.applicants['building_name_rwb_a_1']
+          tmpApplicants['street_name_rwb_a_1'] = response.data.applicants['street_name_rwb_a_1']
+          return Promise.resolve(tmpApplicants);
+        })
+        .catch((error: AxiosError) => {
+          return Promise.resolve(error);
+        });
     };
+}
 
-    const store = createStore('STAGE_2', { brand: 'Ford' }, lovData);
-
-    renderComponent(store, { name: 'vehicleType' });
-
-    expect(screen.queryByLabelText('Convertible')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Truck')).toBeInTheDocument();
-  });
-
-  it('calls setValue on change', () => {
-    const setValue = jest.fn();
-    mockUseFormContext(setValue);
-
-    const store = createStore();
-
-    renderComponent(store);
-
-    const radio = screen.getByLabelText('SUV');
-    fireEvent.click(radio);
-
-    expect(setValue).toHaveBeenCalledWith('vehicleType', 'suv');
-  });
-
-  it('updates on stage or LOV change', () => {
-    const setValue = jest.fn();
-    mockUseFormContext(setValue);
-
-    const store = createStore('STAGE_2', { brand: 'Toyota' }, {
-      vehicleType: [
-        { label: 'Hatchback', value: 'hatchback' },
-      ],
-    });
-
-    renderComponent(store, { name: 'vehicleType' });
-
-    expect(screen.getByLabelText('Hatchback')).toBeInTheDocument();
-  });
-
-  it('renders default options when LOV is empty', () => {
-    mockUseFormContext();
-    const store = createStore();
-
-    renderComponent(store, {
-      options: [
-        { label: 'Electric', value: 'electric' },
-        { label: 'Diesel', value: 'diesel' },
-      ],
-    });
-
-    expect(screen.getByLabelText('Electric')).toBeInTheDocument();
-    expect(screen.getByLabelText('Diesel')).toBeInTheDocument();
-  });
-});
