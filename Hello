@@ -1,96 +1,380 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { useDispatch, useSelector } from "react-redux";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-import { dispatchLoader, getProductCategory } from "../../../services/common-service";
 
-jest.mock("react-redux", () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
+ FAIL  src/modules/dashboard/review-page/review-page.test.tsx (6.754 s)
+  ReviewPage Component
+    √ should render ReviewPage with CCPL content (31 ms)
+    √ should set product details and product category on mount (8 ms)
+    × should filter and render dynamic links for CCPL content (9 ms)
+    √ should handle dispatch call when component mounts (5 ms)
+    × should render Signature component when application_sourcing_a_1 is '1' (4 ms)
+    × should toggle checkbox state when clicked (4 ms)
+    × should show tooltip icon toggle (36 ms)
 
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(),
-}));
+  ● ReviewPage Component › should filter and render dynamic links for CCPL content
 
-jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
-  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
-    Checkbox
-  </div>
-)));
+    TestingLibraryElementError: Unable to find an element with the text: Customer Terms. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
 
-jest.mock("../../../shared/components/signature/signature", () => jest.fn(() => (
-  <div data-testid="signature">Signature</div>
-)));
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="field__group"
+        >
+          <div
+            class="review__content"
+          >
+            <label
+              class="review__content--header"
+            >
+              <p>
+                Terms & Conditions
+              </p>
+            </label>
+            <label>
+              By clicking Agree and Submit, you confirm the below
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                I hereby confirm the information provided above is true, accurate and complete. I also confirm that I have read, understood and agree to be bound by the matters set out in my application herein (''My Application'') and terms and conditions of Standard Chartered Bank (Singapore) Limited (''Bank''), including the Bank's Customer Terms,
 
-describe("ReviewPage Component", () => {
-  let mockDispatch: jest.Mock;
-  const mockStageSelector = [
-    {
-      stageInfo: {
-        products: [
-          {
-            name: "Test Product",
-          },
-        ],
-        applicants: {
-          application_sourcing_a_1: "1",
-        },
-      },
-    },
-  ];
+                Test Product
 
-  beforeEach(() => {
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
-    (getProductCategory as jest.Mock).mockReturnValue("CC");
-    jest.clearAllMocks();
-  });
+                Product Terms and all other applicable terms referred to in My Application. I am aware that all these terms and conditions are available at any branch and I can request a hardcopy by calling the Bank at 1800 747 7000.
+              </p>
+            </div>
+            <label>
+              Advisory from the Singapore Police Force – Warning
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                Your payment accounts, like bank accounts are for your own use only. You may be held criminally liable if your payment account is used by others, e.g. for criminal activities.
+              </p>
+              <ol>
+                <li>
+                  Do not disclose your payment accounts credentials to anyone else.
+                </li>
+                <li>
+                  Do not let anyone else access, operate or control your payment accounts.
+                </li>
+                <li>
+                  Do not receive or transfer money for anyone else using your payment accounts, without verifying why, who you are helping and where the money is from or going to.
+                </li>
+              </ol>
+              <p>
+                You can be convicted for the relevant offences under the Corruption, Drug Trafficking and other Serious Crimes (Confiscation of Benefits) Act 1992 (CDSA) if your account is used for criminal activities. A person convicted of an offence under the CDSA may be liable for a fine up to $250,000, or imprisonment of up to five years, or both.
+              </p>
+              <p>
+                You should make the necessary application to your financial institution if you wish to authorise the operation, access and/or control of your account to a third party. A failure to do so would subject your account to additional risk mitigation measures, and in some cases, your financial institution may terminate or restrict your use of your account and other related accounts you may have with your financial institution.
+              </p>
+              <p>
+                I acknowledge that I have read and agree to all the above.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </body>
 
-  it("should render ReviewPage with CCPL content", () => {
-    render(<ReviewPage />);
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    expect(dispatchLoader).toHaveBeenCalledWith(false);
-  });
+      67 |     const links = reviewpageData.CCPLReviewContent.contentLink;
+      68 |     Object.entries(links).forEach(([_, value]: any) => {
+    > 69 |       expect(screen.getByText(value.name)).toBeInTheDocument();
+         |                     ^
+      70 |     });
+      71 |   });
+      72 |
 
-  it("should set product details and product category on mount", () => {
-    render(<ReviewPage />);
-    expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-  });
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at getByText (src/modules/dashboard/review-page/review-page.test.tsx:69:21)
+          at Array.forEach (<anonymous>)
+      at Object.forEach (src/modules/dashboard/review-page/review-page.test.tsx:68:27)
 
-  it("should filter and render dynamic links for CCPL content", () => {
-    render(<ReviewPage />);
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([_, value]: any) => {
-      expect(screen.getByText(value.name)).toBeInTheDocument();
-    });
-  });
+  ● ReviewPage Component › should render Signature component when application_sourcing_a_1 is '1'
 
-  it("should handle dispatch call when component mounts", () => {
-    render(<ReviewPage />);
-    expect(mockDispatch).toHaveBeenCalledWith(undefined);
-  });
+    TestingLibraryElementError: Unable to find an element by: [data-testid="signature"]
 
-  it("should render Signature component when application_sourcing_a_1 is '1'", () => {
-    render(<ReviewPage />);
-    expect(screen.getByTestId("signature")).toBeInTheDocument();
-  });
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="field__group"
+        >
+          <div
+            class="review__content"
+          >
+            <label
+              class="review__content--header"
+            >
+              <p>
+                Terms & Conditions
+              </p>
+            </label>
+            <label>
+              By clicking Agree and Submit, you confirm the below
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                I hereby confirm the information provided above is true, accurate and complete. I also confirm that I have read, understood and agree to be bound by the matters set out in my application herein (''My Application'') and terms and conditions of Standard Chartered Bank (Singapore) Limited (''Bank''), including the Bank's Customer Terms,
 
-  it("should toggle checkbox state when clicked", () => {
-    render(<ReviewPage />);
-    const checkbox = screen.getByTestId("checkbox");
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeInTheDocument();
-  });
+                Test Product
 
-  it("should show tooltip icon toggle", () => {
-    render(<ReviewPage />);
-    const tooltipIcon = screen.getByRole("button", { hidden: true });
-    fireEvent.click(tooltipIcon);
-    expect(tooltipIcon).toBeInTheDocument();
-  });
-});
+                Product Terms and all other applicable terms referred to in My Application. I am aware that all these terms and conditions are available at any branch and I can request a hardcopy by calling the Bank at 1800 747 7000.
+              </p>
+            </div>
+            <label>
+              Advisory from the Singapore Police Force – Warning
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                Your payment accounts, like bank accounts are for your own use only. You may be held criminally liable if your payment account is used by others, e.g. for criminal activities.
+              </p>
+              <ol>
+                <li>
+                  Do not disclose your payment accounts credentials to anyone else.
+                </li>
+                <li>
+                  Do not let anyone else access, operate or control your payment accounts.
+                </li>
+                <li>
+                  Do not receive or transfer money for anyone else using your payment accounts, without verifying why, who you are helping and where the money is from or going to.
+                </li>
+              </ol>
+              <p>
+                You can be convicted for the relevant offences under the Corruption, Drug Trafficking and other Serious Crimes (Confiscation of Benefits) Act 1992 (CDSA) if your account is used for criminal activities. A person convicted of an offence under the CDSA may be liable for a fine up to $250,000, or imprisonment of up to five years, or both.
+              </p>
+              <p>
+                You should make the necessary application to your financial institution if you wish to authorise the operation, access and/or control of your account to a third party. A failure to do so would subject your account to additional risk mitigation measures, and in some cases, your financial institution may terminate or restrict your use of your account and other related accounts you may have with your financial institution.
+              </p>
+              <p>
+                I acknowledge that I have read and agree to all the above.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </body>
+
+      78 |   it("should render Signature component when application_sourcing_a_1 is '1'", () => {
+      79 |     render(<ReviewPage />);
+    > 80 |     expect(screen.getByTestId("signature")).toBeInTheDocument();
+         |                   ^
+      81 |   });
+      82 |
+      83 |   it("should toggle checkbox state when clicked", () => {
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByTestId (src/modules/dashboard/review-page/review-page.test.tsx:80:19)
+
+  ● ReviewPage Component › should toggle checkbox state when clicked
+
+    TestingLibraryElementError: Unable to find an element by: [data-testid="checkbox"]
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="field__group"
+        >
+          <div
+            class="review__content"
+          >
+            <label
+              class="review__content--header"
+            >
+              <p>
+                Terms & Conditions
+              </p>
+            </label>
+            <label>
+              By clicking Agree and Submit, you confirm the below
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                I hereby confirm the information provided above is true, accurate and complete. I also confirm that I have read, understood and agree to be bound by the matters set out in my application herein (''My Application'') and terms and conditions of Standard Chartered Bank (Singapore) Limited (''Bank''), including the Bank's Customer Terms,
+
+                Test Product
+
+                Product Terms and all other applicable terms referred to in My Application. I am aware that all these terms and conditions are available at any branch and I can request a hardcopy by calling the Bank at 1800 747 7000.
+              </p>
+            </div>
+            <label>
+              Advisory from the Singapore Police Force – Warning
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                Your payment accounts, like bank accounts are for your own use only. You may be held criminally liable if your payment account is used by others, e.g. for criminal activities.
+              </p>
+              <ol>
+                <li>
+                  Do not disclose your payment accounts credentials to anyone else.
+                </li>
+                <li>
+                  Do not let anyone else access, operate or control your payment accounts.
+                </li>
+                <li>
+                  Do not receive or transfer money for anyone else using your payment accounts, without verifying why, who you are helping and where the money is from or going to.
+                </li>
+              </ol>
+              <p>
+                You can be convicted for the relevant offences under the Corruption, Drug Trafficking and other Serious Crimes (Confiscation of Benefits) Act 1992 (CDSA) if your account is used for criminal activities. A person convicted of an offence under the CDSA may be liable for a fine up to $250,000, or imprisonment of up to five years, or both.
+              </p>
+              <p>
+                You should make the necessary application to your financial institution if you wish to authorise the operation, access and/or control of your account to a third party. A failure to do so would subject your account to additional risk mitigation measures, and in some cases, your financial institution may terminate or restrict your use of your account and other related accounts you may have with your financial institution.
+              </p>
+              <p>
+                I acknowledge that I have read and agree to all the above.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </body>
+
+      83 |   it("should toggle checkbox state when clicked", () => {
+      84 |     render(<ReviewPage />);
+    > 85 |     const checkbox = screen.getByTestId("checkbox");
+         |                             ^
+      86 |     fireEvent.click(checkbox);
+      87 |     expect(checkbox).toBeInTheDocument();
+      88 |   });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByTestId (src/modules/dashboard/review-page/review-page.test.tsx:85:29)
+
+  ● ReviewPage Component › should show tooltip icon toggle
+
+    TestingLibraryElementError: Unable to find an element with the role "button"
+
+    Here are the available roles:
+
+      list:
+
+      Name "":
+      <ol />
+
+      --------------------------------------------------
+      listitem:
+
+      Name "":
+      <li />
+
+      Name "":
+      <li />
+
+      Name "":
+      <li />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="field__group"
+        >
+          <div
+            class="review__content"
+          >
+            <label
+              class="review__content--header"
+            >
+              <p>
+                Terms & Conditions
+              </p>
+            </label>
+            <label>
+              By clicking Agree and Submit, you confirm the below
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                I hereby confirm the information provided above is true, accurate and complete. I also confirm that I have read, understood and agree to be bound by the matters set out in my application herein (''My Application'') and terms and conditions of Standard Chartered Bank (Singapore) Limited (''Bank''), including the Bank's Customer Terms,
+
+                Test Product
+
+                Product Terms and all other applicable terms referred to in My Application. I am aware that all these terms and conditions are available at any branch and I can request a hardcopy by calling the Bank at 1800 747 7000.
+              </p>
+            </div>
+            <label>
+              Advisory from the Singapore Police Force – Warning
+            </label>
+            <div
+              class="review__content--body"
+            >
+              <p>
+                Your payment accounts, like bank accounts are for your own use only. You may be held criminally liable if your payment account is used by others, e.g. for criminal activities.
+              </p>
+              <ol>
+                <li>
+                  Do not disclose your payment accounts credentials to anyone else.
+                </li>
+                <li>
+                  Do not let anyone else access, operate or control your payment accounts.
+                </li>
+                <li>
+                  Do not receive or transfer money for anyone else using your payment accounts, without verifying why, who you are helping and where the money is from or going to.
+                </li>
+              </ol>
+              <p>
+                You can be convicted for the relevant offences under the Corruption, Drug Trafficking and other Serious Crimes (Confiscation of Benefits) Act 1992 (CDSA) if your account is used for criminal activities. A person convicted of an offence under the CDSA may be liable for a fine up to $250,000, or imprisonment of up to five years, or both.
+              </p>
+              <p>
+                You should make the necessary application to your financial institution if you wish to authorise the operation, access and/or control of your account to a third party. A failure to do so would subject your account to additional risk mitigation measures, and in some cases, your financial institution may terminate or restrict your use of your account and other related accounts you may have with your financial institution.
+              </p>
+              <p>
+                I acknowledge that I have read and agree to all the above.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </body>
+
+      90 |   it("should show tooltip icon toggle", () => {
+      91 |     render(<ReviewPage />);
+    > 92 |     const tooltipIcon = screen.getByRole("button", { hidden: true });
+         |                                ^
+      93 |     fireEvent.click(tooltipIcon);
+      94 |     expect(tooltipIcon).toBeInTheDocument();
+      95 |   });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByRole (src/modules/dashboard/review-page/review-page.test.tsx:92:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 3 passed, 7 total
+Snapshots:   0 total
+Time:        9.916 s
+Ran all test suites related to changed files.
+
+Watch Usage: Press w to show more.
+
+
+
+
+
+
+
