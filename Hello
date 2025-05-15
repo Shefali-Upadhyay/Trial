@@ -1,1469 +1,325 @@
-import { AppDispatch } from "../../../services/common-service";
-import { FindIndex, getUrl, authenticateType } from "../../../utils/common/change.utils";
-import { KeyWithAnyModel, RadioDependecyModel, StageDetails} from "../../../utils/model/common-model";
-import { fieldErrorAction } from "../../../utils/store/field-error-slice";
-import { stagesAction } from "../../../utils/store/stages-slice";
-import { getProductCategory } from "../../../services/common-service";
+import "./review-page.scss";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import reviewpageData from "../../../assets/_json/review.json";
+import { authenticateType } from "../../../utils/common/change.utils";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  dispatchLoader,
+  getProductCategory,
+} from "../../../services/common-service";
+import Checkbox from "../../../shared/components/checkbox/checkbox";
+import Signature from "../../../shared/components/signature/signature";
+//import TooltipModel from "../../../shared/components/model/tooltip-model";
 
-export const getFields = (getStages: Array<StageDetails>, radioResidency: RadioDependecyModel | null, employerOther?: any, userInputs?: any, bancaSelector?: KeyWithAnyModel): any => {
-    return (dispatch: AppDispatch) => {
-        let fields: Array<KeyWithAnyModel> | undefined;
-        let stageIndex : number | undefined;
-        if (getStages && getStages[0].stageInfo && getStages[0].stageInfo.fieldmetadata && getStages[0].stageInfo.fieldmetadata.data.stages) {
-            let stageId:any;
-            if(getStages[0].stageId === 'ad-2' && authenticateType() == "manual"){
-                stageId = "ad";  
-                stageIndex = 2;
-            }
-            else if(getStages[0].stageId === 'ad-2' && authenticateType() == "myinfo"){
-                stageId = "ad";  
-                stageIndex = FindIndex(getStages[0].stageInfo, stageId);
-            }
-            else if(getStages[0].stageId === 'ad-1' && (authenticateType() === "manual"|| authenticateType() === "myinfo")){
-                stageId = "ad";  
-                stageIndex = FindIndex(getStages[0].stageInfo, stageId);
-            }
-            else if(getStages[0].stageId === 'bd-1' ){
-                stageId = "bd";  
-                stageIndex = FindIndex(getStages[0].stageInfo, stageId);
-            }
-            else if(getStages[0].stageId === 'ssf-1' || getStages[0].stageId === "bd-2" || getStages[0].stageId === "ld-1" || getStages[0].stageId === "bd-3"  && authenticateType() == "manual"){
-                stageId = "bd";
-                stageIndex = FindIndex(getStages[0].stageInfo, stageId);
-            }
-            else if((getStages[0].stageId === 'ssf-1' || getStages[0].stageId === "bd-2" || getStages[0].stageId === 'bd-3') && authenticateType() == "myinfo"){
-                stageId = "bd";
-                stageIndex = FindIndex(getStages[0].stageInfo, stageId);
-            }
-            else{
-                stageId = getStages[0].stageId;
-                stageIndex =  getStages[0].stageInfo.fieldmetadata.data.stages.findIndex(
-                   (id: any) => id.stageId.toLowerCase() === stageId.toLowerCase()
-                 );
-               }
-            if(stageIndex !== undefined){
-             fields = getStages[0].stageInfo.fieldmetadata.data.stages[stageIndex].fields;
-            }
-        }
+const ReviewPage = (props: KeyWithAnyModel) => {
+  const dispatch = useDispatch();
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  const reviewdata: KeyWithAnyModel = reviewpageData;
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const [isHideTooltipIcon, setIsHideTooltipIcon] = useState<boolean>(false);
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+  const rpAuthInfo =
+    authenticateType() === "myinfo" ? reviewdata.myinfo : reviewdata.manual;
+  const [productDetails, setProductDetails] = useState({
+    productName: "",
+  });
+  const [filterLinkList, setFilterLinkList] = useState([]);
+  const [productCategory, setProductCategory] = useState("");
+  useEffect(() => {
+    dispatch(dispatchLoader(false));
+    setProductDetails((prevValue) => {
+      if (
+        stageSelector &&
+        stageSelector[0].stageInfo &&
+        stageSelector[0].stageInfo.products.length >= 1
+      ) {
+        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
+      }
+      return { ...prevValue };
+    });
 
-        let ssfStages: Array<string> | null = null;
-        
-        if (radioResidency) {
-           if (radioResidency.logical_field_name === 'residency_status') {
-                const foreigner = ["passport_no","pass_exp_dt"];
-                const singapore = ["NRIC"];
-                if (radioResidency.value === "CT" || radioResidency.value === "PR") {
-                    ssfStages = singapore;
-                    dispatch(fieldErrorAction.removeMandatoryFields(foreigner));
-                    dispatch(
-                        stagesAction.removeAddToggleField({
-                            removeFields: foreigner,
-                            newFields: singapore,
-                            value: getStages[0].stageInfo.applicants.NRIC_a_1 ? getStages[0].stageInfo.applicants.NRIC_a_1 : ''
-                        })
-                        
-                    );
-                } else if (radioResidency.value === "FR") {
-                    ssfStages = foreigner;
-                    dispatch(fieldErrorAction.removeMandatoryFields(singapore));
-                    const valObj:any = {
-                        'passport_no_a_1': '',
-                        'pass_exp_dt_a_1': '',
-                    }
-                    for(let key in valObj) {
-                        valObj[key] = getUrl.getUserInputs()[key] || '';
-                    }
-                    dispatch(
-                        stagesAction.removeAddToggleField({
-                            removeFields: singapore,
-                            newFields: foreigner,
-                            value: valObj
-                        })
-                    );
-                }
-            }
-            else if (radioResidency.logical_field_name === 'work_type') {
-                const earner = ["name_of_employer", "nature_of_employer", "job_title","office_phone_number"];
-                const selfEmployed = ["name_of_business", "nature_of_employer", "job_title","office_phone_number"];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name, 
-                    value: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                dispatch(stagesAction.resetNewAndOldFields());
-                if (radioResidency.value === 'O') {
-                    ssfStages = null;
-                    const mergedFields = earner.concat(selfEmployed.filter(item => earner.every(value => value !== item)));
-                    dispatch(fieldErrorAction.removeMandatoryFields(mergedFields));
-                    dispatch(
-                        stagesAction.removeAddToggleField({
-                            removeFields: mergedFields,
-                            newFields: [],
-                            value: ''
-                        })
-                    );
-                } else if (radioResidency.value === 'S' || radioResidency.value === 'C') {
-                    ssfStages = earner;
-                    dispatch(fieldErrorAction.removeMandatoryFields(selfEmployed));
-                    const valObj:any = {
-                        'nature_of_employer_a_1': '',
-                        'job_title_a_1': '',
-                        'name_of_employer_a_1': '',
-                        'office_phone_number_a_1': ''
-                    }
-                    for(let key in valObj) {
-                        valObj[key] = getUrl.getUserInputs()[key] || '';
-                    }
-                    dispatch(
-                        stagesAction.removeAddToggleField({
-                            removeFields: selfEmployed,
-                            newFields: earner,
-                            value: valObj
-                        })
-                    );
-                } else if (radioResidency.value === 'E') {
-                    ssfStages = selfEmployed;
-                    dispatch(fieldErrorAction.removeMandatoryFields(earner));
-                    const valObj:any = {
-                        'nature_of_employer_a_1': '',
-                        'job_title_a_1': '',
-                        'name_of_business_a_1': '',
-                        'office_phone_number_a_1': ''
-                    }
-                    for(let key in valObj) {
-                        valObj[key] = getUrl.getUserInputs()[key] || '';
-                    }
-                   dispatch(
-                        stagesAction.removeAddToggleField({
-                            removeFields: earner,
-                            newFields: selfEmployed,
-                            value: valObj
-                        })
-                    );
-                }
-            } 
-            
-            else if (radioResidency.logical_field_name === 'casa_fatca_declaration') {
-                // let sgYes: Array<string> = [];
-                // let sgNo: Array<string> = [];
-                // if (radioResidency.value === 'Y') {
-                //    // sgYes = ["tax_id_no"];
-                //     //sgNo = ["country_of_tax_residence", "crs_reason_code"];
-                //     sgYes = ["tax_id_no", "country_of_tax_residence", "crs_reason_code"]
-                //      sgNo = ["tax_id_no"];
-                //     if (userInputs.applicants.crs_reason_code_a_1 === "A00" || userInputs.applicants.crs_reason_code_a_1 === "C00") {
-                //         sgYes = ["country_of_tax_residence", "crs_reason_code"]
-                //         sgNo = ["tax_id_no", "crs_comments"];
-                //     } 
-                // }
-                //  if (userInputs.applicants.crs_reason_code_a_1 === "A00" || userInputs.applicants.crs_reason_code_a_1 === "C00") {
-                //     sgYes = ["country_of_tax_residence", "crs_reason_code"]
-                //     sgNo = ["tax_id_no", "crs_comments"];
-                // } 
-                //  if (radioResidency.value === 'N') {
-                                //     sgYes = ["tax_id_no", "country_of_tax_residence", "crs_reason_code"]
-                //     sgNo = ["tax_id_no"];
-                //     if (userInputs.applicants.tax_id_no_a_1) {
-                //         sgYes = ["country_of_tax_residence", "tax_id_no"];
-                //         sgNo = ["crs_reason_code"];
-                //     } 
-                    
-                //      if (userInputs.applicants.crs_reason_code_a_1 === "B00") {
-                //         sgYes = ["country_of_tax_residence", "crs_reason_code", "crs_comments"]
-                //         sgNo = ["tax_id_no"];
-                //     } 
-                //     else if (userInputs.applicants.crs_reason_code_a_1 === "A00" || userInputs.applicants.crs_reason_code_a_1 === "C00") {
-                //         sgYes = ["country_of_tax_residence", "crs_reason_code"]
-                //         sgNo = ["tax_id_no", "crs_comments"];
-                //     }
-                // }
-                // if(radioResidency.value === 'Y' || radioResidency.value === 'N'){
-                //     sgYes.push("add_tax_residency_note");
-                //     sgYes.push("add_tax_residency");
-                // }
-                // const userSelection = {
-                //     logical_field_name: radioResidency.logical_field_name, 
-                //     radioResidency: radioResidency.value
-                // };
-                // dispatch(stagesAction.resetDefaultValue(userSelection));
-                // if (radioResidency.value === 'N' && getStages[0].stageInfo.applicants.nationality_a_1 !== "SGP") {
-                //     ssfStages = [...sgYes, "nationality_add"];
-                // } else {
-                //     ssfStages = sgYes
-                //     sgNo.push("nationality_add");
-                // }
-                
-                // dispatch(fieldErrorAction.removeMandatoryFields(sgNo));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: [],
-                        newFields: ["casa_fatca_declaration"],
-                        value: radioResidency.value
-                    })
-                );
-            } else if (radioResidency.logical_field_name === "preferred_limit") {
-                 let showFields: Array<string> = ['credit_limit_consent_info_8'];
-                 let removeFields: Array<string> = [];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name,
-                    radioResidency: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                if(!radioResidency.value) {
-                    radioResidency.value = '0'
-                }
-                if (radioResidency.value === '0') {
-                    showFields = ['credit_limit_consent_info_8'];
-                    removeFields = ['preferred_credit_limit','credit_limit_consent_info_5'];
-                } else if (radioResidency.value === '1') {
-                    showFields = ['preferred_credit_limit','credit_limit_consent_info_5'];
-                    removeFields = ['credit_limit_consent_info_8'];
-                }
-                ssfStages = showFields;
-                dispatch(fieldErrorAction.removeMandatoryFields(removeFields));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: removeFields,
-                        newFields: showFields,
-                        value: ''
-                    })
-                );
-            } //ETC CLI Changes
-            else if (radioResidency.logical_field_name === "credit_limit_consent") {
-                let showFields: Array<string> = [];
-                let removeFields: Array<string> = [];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name,
-                    radioResidency: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                if (radioResidency.value === 'Y') {
-                    showFields = ['work_type'];
-                    removeFields = ['embossed_name','myinfo_data_cli'];
-                    if(bancaSelector && bancaSelector.eligible_banca_insurances)
-                    {
-                        bancaSelector.eligible_banca_insurances.forEach((eligibleBancaInsurance: any) => {
-                            removeFields.push("insurance_consent_" + eligibleBancaInsurance);
-                        });
-                    }
-                } else if (radioResidency.value === 'N') {
-                    const productCategory = getProductCategory(getStages[0].stageInfo.products);
-                    if (getStages[0].stageInfo.applicants['banca_product_applicable_a_1'] === "Y") {
-                        if (getUrl.getJourneyType() !== "ETC" || productCategory !== 'PL') {
-                            showFields = ['embossed_name'];
-                            if(bancaSelector && bancaSelector.eligible_banca_insurances)
-                            {
-                                bancaSelector.eligible_banca_insurances.forEach((eligibleBancaInsurance: any) => {
-                                    showFields.push("insurance_consent_" + eligibleBancaInsurance);
-                                });
-                            }
-                        } else {
-                            if(bancaSelector && bancaSelector.eligible_banca_insurances)
-                            {
-                                bancaSelector.eligible_banca_insurances.forEach((eligibleBancaInsurance: any) => {
-                                    showFields.push("insurance_consent_" + eligibleBancaInsurance);
-                                });
-                            }
-                        }
-                    }
-                    else {
-                        if (getUrl.getJourneyType() !== "ETC" || productCategory !== 'PL') {
-                            showFields = ['embossed_name'];
-                        }
-                    }
-                    removeFields = ['work_type','name_of_employer','name_of_employer_other','name_of_business','job_title','nature_of_employer','myinfo_data_cli','office_phone_number'];
-                }
-                ssfStages = showFields;
-                dispatch(fieldErrorAction.removeMandatoryFields(removeFields));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: removeFields,
-                        newFields: showFields,
-                        value: ''
-                    })
-                );
-            }else if (radioResidency.logical_field_name === "preferred_contact_per_email"){
-                if(!radioResidency.value) {
-                    radioResidency.value = "COL"
-                }
-            }else if (radioResidency.logical_field_name === "preferred_limit_etc") {
-                let showFields: Array<string> = [];
-                let removeFields: Array<string> = [];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name,
-                    radioResidency: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                if (radioResidency.value === '0') {
-                    showFields = [];
-                    removeFields = ['preferred_credit_limit_etc'];
-                } else if (radioResidency.value === '1') {
-                    showFields = ['preferred_credit_limit_etc'];
-                    removeFields = [];
-                }
-                ssfStages = showFields;
-                dispatch(fieldErrorAction.removeMandatoryFields(removeFields));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: removeFields,
-                        newFields: showFields,
-                        value: ''
-                    })
-                );
-            } else if (radioResidency.logical_field_name === "deposit_loan_to" || radioResidency.logical_field_name === "Transfer_amount_to" || radioResidency.logical_field_name === "transfer_amount_to") {
-                let showFields: Array<string> = [];
-                let removeFields: Array<string> = [];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name,
-                    radioResidency: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                if (radioResidency.value === 'SCB Account') {
-                    showFields = ['scb_account_no', 're_enter_scb_account_no', 'enter_account_info'];
-                    removeFields = ['other_bank_name', 'other_bank_account_bt', 'reenter_other_bank_account_bt', 'other_bank_credit_card_bt', 'reenter_other_bank_credit_card_bt'];
-                } else if (radioResidency.value === 'Other Bank Account') {
-                    showFields = ['other_bank_name', 'other_bank_account_bt', 'reenter_other_bank_account_bt'];
-                    removeFields = ['scb_account_no', 're_enter_scb_account_no', 'enter_account_info', 'other_bank_credit_card_bt', 'reenter_other_bank_credit_card_bt'];
-                } else if (radioResidency.value === 'Other Bank Credit Card') {
-                    showFields = ['other_bank_name', 'other_bank_credit_card_bt', 'reenter_other_bank_credit_card_bt'];
-                    removeFields = ['scb_account_no', 're_enter_scb_account_no', 'other_bank_account_bt', 'reenter_other_bank_account_bt', ];
-                }
-                ssfStages = showFields;
-                dispatch(fieldErrorAction.removeMandatoryFields([...removeFields, "enter_account_info"]));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: removeFields,
-                        newFields: showFields,
-                        value: ''
-                    })
-                );
-            } else if (radioResidency.logical_field_name === "Customer_Agree_for_Phoenix_Limit_porting") {
-                let showFields: Array<string> = [];
-                let removeFields: Array<string> = [];
-                const userSelection = {
-                    logical_field_name: radioResidency.logical_field_name,
-                    radioResidency: radioResidency.value
-                };
-                dispatch(stagesAction.resetDefaultValue(userSelection));
-                if (radioResidency.value === 'N') {
-                    showFields = [];
-                    removeFields = ['min_limit'];
-                } else if (radioResidency.value === 'Y') {
-                    showFields = ['min_limit'];
-                    removeFields = [];
-                }
-                ssfStages = showFields;
-                dispatch(fieldErrorAction.removeMandatoryFields(removeFields));
-                dispatch(
-                    stagesAction.removeAddToggleField({
-                        removeFields: removeFields,
-                        newFields: showFields,
-                        value: ''
-                    })
-                );
-            }
-        } else if (employerOther === 'name_of_employer_other') {
-            ssfStages = ['name_of_employer_other'];
-            dispatch(
-                stagesAction.removeAddToggleField({
-                    removeFields: [],
-                    newFields: ssfStages,
-                    value: ''
-                })
-            );
-        } else if (employerOther === 'fields') {
-            ssfStages = null;
-            dispatch(fieldErrorAction.removeMandatoryFields(['name_of_employer_other']));
-            dispatch(
-                stagesAction.removeAddToggleField({
-                    removeFields: ['name_of_employer_other'],
-                    newFields: [],
-                    value: ''
-                })
-            );
-        } 
-        if (ssfStages && fields) {
-            dispatch(fieldErrorAction.getMandatoryFields(ssfStages));
-            return fields.filter((field: KeyWithAnyModel) =>
-                ssfStages!.includes(field.logical_field_name)
-            );
-        }
-        return null;
+    const productCtg = getProductCategory(stageSelector[0].stageInfo.products);
+    setProductCategory(productCtg);
+    const checkProductCategory =
+    productCtg === "CC" || productCtg === "CA" || productCtg === "SA" ? true : false;
+    setIsHideTooltipIcon(checkProductCategory);
+    if (checkProductCategory === true) {
+      setIsChecked(true);
     }
-}
+
+    let reviewLinks =
+      productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
+    const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
+      (link: KeyWithAnyModel) => {
+        return link;
+      }
+    );
+    setFilterLinkList(fliteredLink);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // useEffect(() => {
+  //   if (isHideTooltipIcon) {
+  //     props.updateCheckboxStatus(true);
+  //   } else {
+  //     props.updateCheckboxStatus(isChecked);
+  //   }
+
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [isChecked]);
+
+  return (
+    <>
+      {/* CASA begins */}
+      {productDetails && isHideTooltipIcon === true && (
+        <div className="field__group">
+          <div className="review__content">
+            <label className="review__content--header">
+              <p>{reviewdata.confirm.reviewPageHeader1}</p>
+            </label>
+            {rpAuthInfo.header && <label>{rpAuthInfo.header}</label>}
+            {rpAuthInfo.reviewDesc_1 && (
+              <div className="review__content--body">
+                <p>
+                  {rpAuthInfo.reviewDesc_1} {productDetails.productName}{" "}
+                  {rpAuthInfo.reviewDesc_2}
+                </p>
+              </div>
+            )}
+            {rpAuthInfo.reviewMyInfoDesc_1 && (
+              <div className="review__content--body">
+                {rpAuthInfo.reviewMyInfoDesc_1 && (
+                  <p>{rpAuthInfo.reviewMyInfoDesc_1}</p>
+                )}
+                {rpAuthInfo.reviewMyInfoDesc_1 && (
+                  <ol type="a">
+                    <li>{rpAuthInfo.reviewMyInfoDesc_2}</li>
+                    <li>{rpAuthInfo.reviewMyInfoDesc_3}</li>
+                    <li>{rpAuthInfo.reviewMyInfoDesc_4}</li>
+                  </ol>
+                )}
+                {rpAuthInfo.reviewMyInfoDesc_5 && (
+                  <p>
+                    {rpAuthInfo.reviewMyInfoDesc_5} {productDetails.productName}{" "}
+                    {rpAuthInfo.reviewMyInfoDesc_6}
+                  </p>
+                )}
+              </div>
+            )}
+            <label>{reviewdata.confirm.reviewDesc}</label>
+            <div className="review__content--body">
+              <p>{reviewdata.confirm.reviewDesc_1}</p>
+              <ol>
+                <li>{reviewdata.confirm.reviewDesc_2}</li>
+                <li>{reviewdata.confirm.reviewDesc_3}</li>
+                <li>{reviewdata.confirm.reviewDesc_4}</li>
+              </ol>
+              <p>{reviewdata.confirm.reviewDesc_5}</p>
+              <p>{reviewdata.confirm.reviewDesc_6}</p>
+              <p>{reviewdata.confirm.reviewDesc_7}</p>
+            </div>
+          </div>
+        </div>
+      )} 
+      {/*CASA ends */}
+      {/*CCPL begins */}
+      {isHideTooltipIcon === false && (
+        <>
+          <div className="review__ccpl__content">
+            <div className="review__title">
+              <div className="review__title__label">
+              <p>{reviewdata.CCPL.reviewTitle1}</p>
+            </div>            
+            <div className="tool-tip__icon">
+              <div
+                className="tool-tip"
+                onClick={(event) =>
+                  setIsTooltipOpen(isTooltipOpen ? false : true)
+                }
+              ></div>
+            </div>             
+            </div>
+            {/* {productCategory === "PL" && (
+              <>
+                <div className="review__top__content">
+                  <div>{reviewdata.PLLinks.contentStart}</div>
+                  {filterLinkList.map((links: KeyWithAnyModel) => {
+                    return (
+                      <>
+                        <a
+                          target="_blank"
+                          rel="noreferrer"
+                          href={links[1].path}
+                        >
+                          {links[1].name},
+                        </a>
+                      </>
+                    );
+                  })}
+                  {reviewdata.CCPLReviewContent.contentLinkDescp}
+                </div>
+                <div className="review__top__content">
+                  {reviewdata.PL.reviewContent1}
+                </div>
+              </>
+            )} */}
+          </div>
+          <div className="review__checkbox">
+          <Checkbox
+              reviewHeader={reviewdata.CCPL.reviewHeader}
+              reviewDescp1={reviewdata.CCPL.reviewDescp1}
+              reviewDescpoint1={reviewdata.CCPL.reviewDescpoint1}
+              reviewDescpoint2={reviewdata.CCPL.reviewDescpoint2}
+              reviewDescp2={reviewdata.CCPL.reviewDescp2}
+              reviewDescp3={reviewdata.CCPL.reviewDescp3}
+              reviewDescp4={reviewdata.CCPL.reviewDescp4}
+              checkedStatus={isChecked}
+              setCheckedStatus={setIsChecked}
+            />                        
+          </div>
+          {productCategory === "CC" && (
+            <div className="review__ccpl__content">
+              <div className="review__content--header">
+                <label>{reviewdata.CCPLReviewContent.contentHeading}</label>
+              </div>
+              <div>
+                {reviewdata.CCPLReviewContent.contentStart}
+                {filterLinkList.map((links: KeyWithAnyModel) => {
+                  return (
+                    <>
+                      <a target="_blank" rel="noreferrer" href={links[1].path}>
+                        {links[1].name},
+                      </a>
+                    </>
+                  );
+                })}
+                {reviewdata.CCPLReviewContent.contentLinkDescp},
+                {reviewdata.CCPLReviewContent.contentEnd}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      
+      {
+        stageSelector &&
+        stageSelector[0].stageInfo &&
+        stageSelector[0].stageInfo.applicants.application_sourcing_a_1=== "1"
+      ?
+      <Signature
+        // data={reviewdata.CCPLReviewContent.signature}
+        fieldName="signUser" 
+        label_name= "Signature"
+        sign_title="Please provide your Signature"
+        sign_title_info="Click Here"
+        read_more_label_name= ""
+        />: ""
+      }
+      {/*CCPL ends */}
+      {/* {isTooltipOpen && (
+        <TooltipModel
+          isTooltipOpen={isTooltipOpen}
+          data="review"
+          setIsTooltipOpen={setIsTooltipOpen}
+          productCategory={productCategory}
+        />
+      )} */}
+    </>
+  );
+};
+
+export default ReviewPage;
 
 
 
 import React from "react";
-import { shallow } from "enzyme";
-import { getFields } from "./radio-with-label.utils";
-jest.autoMockOff();
+import { render, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import ReviewPage from "./review-page";
+import reviewpageData from "../../../assets/_json/review.json";
+import { dispatchLoader, getProductCategory } from "../../../services/common-service";
 
-jest.mock("axios", () => ({
-__esModule: true,
+// Mock Redux hooks and external modules
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
 }));
 
-jest.mock("@lottiefiles/react-lottie-player", () => ({
-__esModule: true,
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  getProductCategory: jest.fn(),
 }));
-describe("ReferralCode Component", () => {
-    let wrapper:any;
 
-    beforeEach(() => {
-   // wrapper = shallow(<ReferralCode />);
+jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
+  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
+    Checkbox
+  </div>
+)));
+
+describe("ReviewPage Component", () => {
+  let mockDispatch: jest.Mock;
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        products: [
+          {
+            name: "Test Product",
+          },
+        ],
+        applicants:[
+          {
+            application_sourcing_a_1:"1",
+          }
+        ]
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    // Reset mocks
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
+    (getProductCategory as jest.Mock).mockReturnValue("CC");
+
+    jest.clearAllMocks();
+  });
+
+  it("should render ReviewPage with CCPL content", () => {
+    render(<ReviewPage />);
+
+    // Check CCPL content is rendered
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    
+
+    // Verify loader dispatch
+    expect(dispatchLoader).toHaveBeenCalledWith(false);
+  });
+
+  
+
+  it("should set product details and product category on mount", () => {
+    render(<ReviewPage />);
+
+   expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
+                          
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+  });
+
+ 
+it("should filter and render dynamic links for CCPL content", () => {
+    render(<ReviewPage />);
+    const links = reviewpageData.CCPLReviewContent.contentLink;
+    Object.entries(links).forEach(([key, value]) => {
+      expect(screen.getByText(/Customer Terms/)).toBeInTheDocument();
     });
+  });
+it("should handle dispatch call when component mounts", () => {
+    render(<ReviewPage />);
 
-   
+    // Verify dispatch call for loader
+    expect(mockDispatch).toHaveBeenCalledWith(undefined);
+  });
 
-    it("should have an empty div with class 'referral-content-image'", () => {
-       const getStages = [{
-        "stageId": "ssf-1",
-        "stageInfo": {
-            "application": {
-                "application_reference": "",
-                "request_id": null,
-                "channel_reference": "020415bcf6bb622024",
-                "branch_code": "330",
-                "country_code": "SG",
-                "source_system_name": "3",
-                "acquisition_channel": "D",
-                "referral_id": "",
-                "referral": "",
-                "sourcing_id": null,
-                "application_date": "2024-12-04",
-                "priority_flag": "",
-                "total_applicants": 1,
-                "application_status": null,
-                "authentication_flag": null,
-                "stage_wise": null,
-                "page_wise": "yes",
-                "version": "",
-                "form_type": null,
-                "ext_source": null,
-                "ext_source_instance": null,
-                "ext_source_type": null,
-                "ext_lead_reference_number": null,
-                "ext_authentication_reference_number": null,
-                "ext_acceptance_reference_number": null,
-                "tmxSessionId": "80866c6f-a323-43bc-b30b-a95b874254b6",
-                "trueClientIP": "136.226.243.109",
-                "applicant_no": 0,
-                "total_applicants_gb": 0,
-                "is_digital_journey": null,
-                "application_sourcing": null
-            },
-            "applicants": {
-                "middle_name_a_1": null,
-                "FIN_a_1": null,
-                "email_preferred_contact_a_1": null,
-                "sales_id_1": null,
-                "pass_exp_date_a_1": null,
-                "document_no_a_1": null,
-                "request_id_dd": null,
-                "email_classification_a_1": null,
-                "mobile_preferred_contact_a_1": null,
-                "last_name_a_1": null,
-                "first_name_a_1": null,
-                "dedupe_reason": null,
-                "source_system_name": null,
-                "document_category_a_1": null,
-                "existing_relationship_id_a_1": null,
-                "date_of_birth_a_1": null,
-                "cuco_icm_relid": null,
-                "passport_no_a_1": null,
-                "service_type_dd": null,
-                "arm_code": null,
-                "full_name_a_1": null,
-                "application_date": null,
-                "NRIC_a_1": null,
-                "last_updated_credit_limit_date_flag_a_1": null,
-                "noa_valid_a_1": null,
-                "home_branch_1": null,
-                "mobile_classification_a_1": null,
-                "dsa_code_a_1": null,
-                "contact_preference_casa_a_1": null,
-                "contact_preference_a_1": null,
-                "mobile_contact_type_a_1": null,
-                "name_of_document_a_1": null,
-                "channel_reference": null,
-                "referral_id_1": null,
-                "email_contact_type_a_1": null,
-                "email_a_1": null,
-                "ebid_a_1": null,
-                "email_id_change_a_1": null,
-                "country_of_account_opening": null,
-                "supplementary_card_flag_a_1": null,
-                "segment_ntb": null,
-                "other_source": null,
-                "residency_status_a_1": null,
-                "journey_type_a_1": null,
-                "mode_of_operation": null,
-                "dedupe_category": null,
-                "mobile_number_a_1": null,
-                "mobile_country_code_a_1": null,
-                "icdd_reference_no_availability_a_1": null,
-                "cpf_valid_a_1": null,
-                "mobile_no_change_a_1": null
-            },
-            "products": [
-                {
-                    "name": "Priority Visa Infinite Credit Card",
-                    "campaign": "5882",
-                    "product_sequence_number": "1",
-                    "product_type": "880",
-                    "product_category": "CC",
-                    "company_category": "NA"
-                }
-            ],
-            "fieldmetadata": {
-                "version": "3.8.5",
-                "country": "SG",
-                "data": {
-                    "stages": [
-                        {
-                            "stageName": "Basic Data",
-                            "stageId": "BD",
-                            "submitUrl": null,
-                            "fields": [
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "full_name",
-                                    "min_length": "3",
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Full name",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Full name as in NRIC / Passport",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "31",
-                                    "seq_no": "700",
-                                    "positioning": "2",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Yes",
-                                    "length": "107",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[a-zA-Z-@&().,\"'\\/]+(?: [a-zA-Z-@&().,\"'\\/]+)*$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "first_name",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "First name",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "First name",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "X",
-                                    "value_pair": null,
-                                    "label_length": "10",
-                                    "seq_no": "800",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Yes",
-                                    "length": "35",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "middle_name",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Middle name",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Middle name",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "X",
-                                    "value_pair": null,
-                                    "label_length": "11",
-                                    "seq_no": "900",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "No",
-                                    "length": "35",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "last_name",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Last name",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Last name",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "X",
-                                    "value_pair": null,
-                                    "label_length": "9",
-                                    "seq_no": "1000",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "No",
-                                    "length": "35",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "date_of_birth",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Date of birth",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Date of birth",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "13",
-                                    "seq_no": "1100",
-                                    "positioning": "2",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Date",
-                                    "mandatory": "Yes",
-                                    "length": "10",
-                                    "type": "Date",
-                                    "lov": "No",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "email",
-                                    "min_length": "8",
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Email",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Email",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "5",
-                                    "seq_no": "1200",
-                                    "positioning": "2",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Yes",
-                                    "length": "70",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[a-zA-Z0-9_%+\\-]+([a-zA-Z0-9_%+\\.\\-]+)@(?!.*?\\.\\.)([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "mobile_number",
-                                    "min_length": "8",
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Singapore number",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Mobile number",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "13",
-                                    "seq_no": "1700",
-                                    "positioning": "2",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Phone",
-                                    "mandatory": "Yes",
-                                    "length": "8",
-                                    "type": "Numeric",
-                                    "lov": "No",
-                                    "regex": "^[89]\\d{7}$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": "65",
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "residency_status",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Residency Status",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Residency status",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "16",
-                                    "seq_no": "2300",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Radio With Label",
-                                    "mandatory": "Yes",
-                                    "length": "2",
-                                    "type": "Picklist",
-                                    "lov": "Yes",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "NRIC",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "NRIC",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "NRIC",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "4",
-                                    "seq_no": "2400",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Conditional",
-                                    "length": "9",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[0-9a-zA-Z]+$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "FIN",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "FIN",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "FIN",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "3",
-                                    "seq_no": "2410",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Conditional",
-                                    "length": "9",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[0-9a-zA-Z]+$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "pass_exp_date",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Pass expiry date",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Pass expiry date",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "16",
-                                    "seq_no": "2420",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Date",
-                                    "mandatory": "Conditional",
-                                    "length": "9",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[0-9a-zA-Z]+$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "passport_no",
-                                    "min_length": "5",
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "Y",
-                                    "rcw_ca": "Y",
-                                    "rcw_td": "Y",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Passport number",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Passport number",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "Y",
-                                    "value_pair": null,
-                                    "label_length": "15",
-                                    "seq_no": "2500",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "Conditional",
-                                    "length": "15",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[0-9a-zA-Z]+$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": "No",
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "dsa_code",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": "054",
-                                    "joint": "Y",
-                                    "ntb": "Y",
-                                    "etb": "Y",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "X",
-                                    "rcw_sa": "X",
-                                    "rcw_ca": "X",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "Y",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "Agent Code",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Agent Code",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "X",
-                                    "value_pair": null,
-                                    "label_length": "10",
-                                    "seq_no": "2880",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Text",
-                                    "mandatory": "No",
-                                    "length": "5",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": "^[a-zA-Z0-9]+(?: [a-zA-Z0-9]+)*$",
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": null,
-                                    "max_selects": null,
-                                    "info_tooltips": null,
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                },
-                                {
-                                    "country": "SG",
-                                    "system_derived": null,
-                                    "logical_field_name": "contact_preference",
-                                    "min_length": null,
-                                    "status": "A",
-                                    "product_specific": "No",
-                                    "sub_product_code": null,
-                                    "joint": "Y",
-                                    "ntb": "X",
-                                    "etb": "X",
-                                    "rcw_cc": "Y",
-                                    "rcw_pl": "Y",
-                                    "rcw_sa": "X",
-                                    "rcw_ca": "X",
-                                    "rcw_td": "X",
-                                    "rcw_ml": null,
-                                    "RTOB_STAGE": "BD",
-                                    "rwb_rtob_stage": "DD",
-                                    "rwb_rtob_sf_stage": null,
-                                    "rwb_category": "ssf-1",
-                                    "rwb_ipad": "X",
-                                    "rwb_desktop": "Y",
-                                    "sc_com": "Y",
-                                    "mobile": "Y",
-                                    "lov_field_name": "By clicking on \"save and next\", you agree to allow Standard Chartered Bank to contact you regarding this credit card application",
-                                    "child_lov_field_name": null,
-                                    "rwb_label_name": "Before you proceed with this application, please read our Customer Terms and Credit Card Terms carefully.<br>By clicking on \"Continue\", you consent to Standard Chartered Bank (Singapore) Limited (\"the Bank\"):<br>(i) contacting you regarding this application;<br>(ii) verifying (a) any of the information you provide or will be providing to the Bank regarding this application and (b) your credit standing based on information obtained from credit reference agencies; and<br>(iii) collecting, using and/or disclosing the information you provide or will be providing to the Bank regarding this application to any member of the Standard Chartered Group, for the purposes of compliance with the Standard Chartered Group's regulatory obligations.<br>If you have any existing unsecured credit facilities with the Bank, you consent and agree to the Bank reviewing and adjusting the credit limit of such existing unsecured credit facilities as the Bank may reasonably deem fit and at its sole discretion. If you are an existing customer of Trust Bank, you also consent that the credit limit of unsecured credit facilities will be shared across the Bank and Trust Bank.",
-                                    "aadhaar_prepop": null,
-                                    "etb_preprop": "X",
-                                    "value_pair": null,
-                                    "label_length": "400",
-                                    "seq_no": "2900",
-                                    "positioning": "1",
-                                    "field_set": "Yes",
-                                    "field_set_name": "Basic Information",
-                                    "component_type": "Information",
-                                    "mandatory": "No",
-                                    "length": "400",
-                                    "type": "Text",
-                                    "lov": "No",
-                                    "regex": null,
-                                    "sf": null,
-                                    "sfp": null,
-                                    "prepopulation_service_type": null,
-                                    "prepopulation_field_mapping": null,
-                                    "ui_derivation_logic": null,
-                                    "ui_defaulted_value": null,
-                                    "default_visibility": null,
-                                    "header": null,
-                                    "details": "If this application is not successfully completed, Standard Chartered or our appointed agents and/or representatives may contact you via email, SMS and/or voice call to assist you in completing the said application. By clicking \"Save and next\", you consent to us using your information above and contacting you via email, SMS and/or voice call for the purpose of completing this application.",
-                                    "max_selects": null,
-                                    "info_tooltips": "Yes",
-                                    "field_set_with_info": null,
-                                    "prelogin_ntc_or_ntp": "X",
-                                    "postlogin_ntc_or_ntp": "X",
-                                    "prelogin_etc_or_etp": "X",
-                                    "postlogin_etc_or_etp": "X",
-                                    "prelogin_eca": "X",
-                                    "postlogin_eca": "X",
-                                    "prelogin_ecc": "X",
-                                    "postlogin_ecc": "X"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            },
-            "lov_desc": {},
-            "stage": {
-                "stage_id": "BD",
-                "workflow_stage_id": null,
-                "page_id": "ssf-1",
-                "stage_status": "",
-                "stage_params": {
-                    "is_dedupe_required": false,
-                    "current_applicant": 0,
-                    "eb_status": null
-                },
-                "applicant_status": []
-            },
-            "status": {
-                "status-code": "200",
-                "status-message": null
-            },
-            "client": {
-                "journey": null,
-                "auth-type": null,
-                "login-type": null,
-                "myinfo": {
-                    "myinfo-attributes": null,
-                    "myinfo-code": null,
-                    "myinfo-redirect-uri": null,
-                    "myinfo-client-id": null,
-                    "is-myinfo-virtual": false,
-                    "shortform-myinfo-data-mismatch": false
-                }
-            }
-        }
-    }];
-          
-            
-            let radioResidency= {
-                logical_field_name:"residency_status",
-                value:null
-            };
-            let employerOther =null;
-            let userInputs= {
-             applicants:   {
-                    "full_name_a_1": "",
-                    "first_name_a_1": "",
-                    "email_a_1": "",
-                    "residency_status_a_1": ""
-                },
-                missingFields:{}
-            };
-           let bancaSelector={};
-        // @ts-ignore
-       // const data = getFields(getStages,radioResidency,employerOther,userInputs,bancaSelector);
-        // expect(data).toBe("");
-        // expect(wrapper.find("div.referral-content-image").children().length).toBe(0);
-    });
-});
+ });
