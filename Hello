@@ -1,31 +1,121 @@
-import { getFields } from "../radio-with-label.utils"; import { fieldErrorAction } from "../../../utils/store/field-error-slice"; import { stagesAction } from "../../../utils/store/stages-slice"; import { getProductCategory } from "../../../services/common-service"; import { getUrl, authenticateType, FindIndex } from "../../../utils/common/change.utils";
+import { AppDispatch } from "../../../services/common-service";
+import {
+  KeyWithAnyModel,
+  StageDetails,
+} from "../../../utils/model/common-model";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { getUrl } from "../../../utils/common/change.utils";
 
-jest.mock("../../../utils/store/field-error-slice", () => ({ fieldErrorAction: { removeMandatoryFields: jest.fn(), }, }));
+export const getFields = (
+  getStages: Array<StageDetails>,
+  phoneSelector: any,
+): any => {
+  return (dispatch: AppDispatch) => {
+    const stageId = getStages[0].stageId;
+    const stageIndex =  getStages[0].stageInfo.fieldmetadata.data.stages.findIndex(
+      (id: any) => id.stageId.toLowerCase() === stageId.toLowerCase()
+    );
+    let fields: Array<KeyWithAnyModel> | undefined = getStages[0].stageInfo.fieldmetadata.data.stages[stageIndex === -1?0:stageIndex].fields;
+    let newFileds: Array<KeyWithAnyModel> = [];
+    let newFieldsArray: Array<string> = [];
+    const journeyType = getUrl.getJourneyType();
 
-jest.mock("../../../utils/store/stages-slice", () => ({ stagesAction: { removeAddToggleField: jest.fn(), resetDefaultValue: jest.fn(), resetNewAndOldFields: jest.fn(), }, }));
+    let getClonedField = (logical_field_name: string) => {
+      if (fields) {
+        let field = fields.find(
+          fieldData => fieldData.logical_field_name === logical_field_name
+        );
+        if (field && field.logical_field_name) {
+          return { ...field };
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    };
 
-jest.mock("../../../utils/common/change.utils", () => ({ getUrl: { getUserInputs: jest.fn(), getJourneyType: jest.fn(), }, authenticateType: jest.fn(), FindIndex: jest.fn(), }));
+    phoneSelector.fields.forEach((field: string) => {
+      let phone = getClonedField(phoneSelector.fields[0]);
+      if (field && phone) {
+        if(phoneSelector.fields[0] === "mobile_number_rwb"){
+          phone.logical_field_name = "mobile_number";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+          phone.editable = false;
+        }
+        else if(phoneSelector.fields[0] === "mobile_1"){
+          phone.logical_field_name = "mobile_1_add";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }
+        else if(phoneSelector.fields[0] === "mobile_2"){
+          phone.logical_field_name = "mobile_2_add";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "overseas_mobile1_contact_no"){
+          phone.logical_field_name = "overseas_mobile1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "overseas_mobile2_contact_no"){
+          phone.logical_field_name = "overseas_mobile2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ofc1_number"){
+          phone.logical_field_name = "ofc1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ofc2_number"){
+          phone.logical_field_name = "ofc2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "home_phone2_number"){
+          phone.logical_field_name = "home_phone2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "office_phone1_number"){
+          phone.logical_field_name = "office_phone1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "office_phone2_number"){
+          phone.logical_field_name = "office_phone2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ohph1_number"){
+          phone.logical_field_name = "ohph1";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }else if(phoneSelector.fields[0] === "ohph2_number"){
+          phone.logical_field_name = "ohph2";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+        }
+        else if(phoneSelector.fields[0] === "home_phone_number_rwb"){
+          phone.logical_field_name = "home_phone_number";
+          phone.component_type = "Phone";
+          phone.rwb_label_name = "";
+          phone.editable = false;
+        }
+        if (journeyType) {
+          phone.hide_remove_btn = true;
+        }
+        newFileds.push(phone);
+        newFieldsArray.push(phone.logical_field_name);
+      }
+    });
 
-jest.mock("../../../services/common-service", () => ({ getProductCategory: jest.fn(), }));
+    if (newFieldsArray.length > 0 && phoneSelector.fields[0] !== "home_phone_number_rwb") {
+      dispatch(fieldErrorAction.getMandatoryFields(newFieldsArray));
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: newFieldsArray,
+          value: ""
+        })
+      );
+    }
 
-describe("getFields", () => { const mockDispatch = jest.fn();
-
-beforeEach(() => { jest.clearAllMocks(); });
-
-it("should handle 'residency_status' as PR", () => { authenticateType.mockReturnValue("manual"); getUrl.getUserInputs.mockReturnValue({}); const radioResidency = { logical_field_name: "residency_status", value: "PR", }; const mockStages = [ { stageId: "ssf-1", stageInfo: { fieldmetadata: { data: { stages: [{ stageId: "bd", fields: ["NRIC"] }] } }, applicants: { NRIC_a_1: "S1234567A" }, }, }, ]; getFields(mockStages, radioResidency)(mockDispatch); expect(fieldErrorAction.removeMandatoryFields).toHaveBeenCalled(); });
-
-it("should handle 'work_type' as S", () => { getUrl.getUserInputs.mockReturnValue({ nature_of_employer_a_1: "Govt", job_title_a_1: "Engineer", name_of_employer_a_1: "Org", office_phone_number_a_1: "12345678", }); const radioResidency = { logical_field_name: "work_type", value: "S", }; const mockStages = [{ stageId: "bd-1", stageInfo: { fieldmetadata: { data: { stages: [{ stageId: "bd", fields: [] }] } }, applicants: {}, }, }]; getFields(mockStages, radioResidency)(mockDispatch); expect(stagesAction.removeAddToggleField).toHaveBeenCalled(); });
-
-it("should handle 'casa_fatca_declaration' as NO", () => { const radioResidency = { logical_field_name: "casa_fatca_declaration", value: "NO", }; const mockStages = [ { stageId: "bd-1", stageInfo: { fieldmetadata: { data: { stages: [{ stageId: "bd", fields: [] }] } }, applicants: {}, }, }, ]; getFields(mockStages, radioResidency)(mockDispatch); expect(stagesAction.resetDefaultValue).toHaveBeenCalled(); });
-
-it("should handle 'preferred_limit' as NO", () => { const radioResidency = { logical_field_name: "preferred_limit", value: "NO", }; const mockStages = []; getFields(mockStages, radioResidency)(mockDispatch); expect(stagesAction.resetNewAndOldFields).toHaveBeenCalled(); });
-
-it("should handle 'credit_limit_consent' as NO", () => { const radioResidency = { logical_field_name: "credit_limit_consent", value: "NO", }; getFields([], radioResidency)(mockDispatch); expect(getProductCategory).toHaveBeenCalled(); });
-
-it("should handle 'preferred_contact_per_email'", () => { const radioResidency = { logical_field_name: "preferred_contact_per_email", value: "Yes", }; getFields([], radioResidency)(mockDispatch); expect(mockDispatch).toHaveBeenCalled(); });
-
-it("should handle 'preferred_limit_etc' as YES", () => { const radioResidency = { logical_field_name: "preferred_limit_etc", value: "YES", }; getFields([], radioResidency)(mockDispatch); expect(mockDispatch).toHaveBeenCalled(); });
-
-it("should handle 'deposit_loan_to' field", () => { const radioResidency = { logical_field_name: "deposit_loan_to", value: "Account", }; getFields([], radioResidency)(mockDispatch); expect(mockDispatch).toHaveBeenCalled(); });
-
-it("should handle 'Customer_Agree_for_Phoenix_Limit_porting' as NO", () => { const radioResidency = { logical_field_name: "Customer_Agree_for_Phoenix_Limit_porting", value: "NO", }; getFields([], radioResidency)(mockDispatch); expect(stagesAction.resetNewAndOldFields).toHaveBeenCalled(); }); });
+    return newFileds;
+  };
+};
