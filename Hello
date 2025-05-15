@@ -1,121 +1,128 @@
-import { AppDispatch } from "../../../services/common-service";
-import {
-  KeyWithAnyModel,
-  StageDetails,
-} from "../../../utils/model/common-model";
+import { getFields } from "../path-to-your-file"; // adjust path accordingly
 import { fieldErrorAction } from "../../../utils/store/field-error-slice";
 import { stagesAction } from "../../../utils/store/stages-slice";
 import { getUrl } from "../../../utils/common/change.utils";
 
-export const getFields = (
-  getStages: Array<StageDetails>,
-  phoneSelector: any,
-): any => {
-  return (dispatch: AppDispatch) => {
-    const stageId = getStages[0].stageId;
-    const stageIndex =  getStages[0].stageInfo.fieldmetadata.data.stages.findIndex(
-      (id: any) => id.stageId.toLowerCase() === stageId.toLowerCase()
-    );
-    let fields: Array<KeyWithAnyModel> | undefined = getStages[0].stageInfo.fieldmetadata.data.stages[stageIndex === -1?0:stageIndex].fields;
-    let newFileds: Array<KeyWithAnyModel> = [];
-    let newFieldsArray: Array<string> = [];
-    const journeyType = getUrl.getJourneyType();
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getJourneyType: jest.fn(),
+  },
+}));
 
-    let getClonedField = (logical_field_name: string) => {
-      if (fields) {
-        let field = fields.find(
-          fieldData => fieldData.logical_field_name === logical_field_name
-        );
-        if (field && field.logical_field_name) {
-          return { ...field };
-        } else {
-          return null;
-        }
-      } else {
-        return null;
-      }
+describe("getFields", () => {
+  const dispatch = jest.fn();
+
+  const mockStages = [
+    {
+      stageId: "stage1",
+      stageInfo: {
+        fieldmetadata: {
+          data: {
+            stages: [
+              {
+                stageId: "stage1",
+                fields: [
+                  {
+                    logical_field_name: "mobile_number_rwb",
+                    component_type: "TextBox",
+                    rwb_label_name: "Mobile Number",
+                    editable: true,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should transform field and dispatch actions", () => {
+    (getUrl.getJourneyType as jest.Mock).mockReturnValue("someJourney");
+
+    const phoneSelector = {
+      fields: ["mobile_number_rwb"],
     };
 
-    phoneSelector.fields.forEach((field: string) => {
-      let phone = getClonedField(phoneSelector.fields[0]);
-      if (field && phone) {
-        if(phoneSelector.fields[0] === "mobile_number_rwb"){
-          phone.logical_field_name = "mobile_number";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-          phone.editable = false;
-        }
-        else if(phoneSelector.fields[0] === "mobile_1"){
-          phone.logical_field_name = "mobile_1_add";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }
-        else if(phoneSelector.fields[0] === "mobile_2"){
-          phone.logical_field_name = "mobile_2_add";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "overseas_mobile1_contact_no"){
-          phone.logical_field_name = "overseas_mobile1";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "overseas_mobile2_contact_no"){
-          phone.logical_field_name = "overseas_mobile2";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "ofc1_number"){
-          phone.logical_field_name = "ofc1";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "ofc2_number"){
-          phone.logical_field_name = "ofc2";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "home_phone2_number"){
-          phone.logical_field_name = "home_phone2";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "office_phone1_number"){
-          phone.logical_field_name = "office_phone1";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "office_phone2_number"){
-          phone.logical_field_name = "office_phone2";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "ohph1_number"){
-          phone.logical_field_name = "ohph1";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }else if(phoneSelector.fields[0] === "ohph2_number"){
-          phone.logical_field_name = "ohph2";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-        }
-        else if(phoneSelector.fields[0] === "home_phone_number_rwb"){
-          phone.logical_field_name = "home_phone_number";
-          phone.component_type = "Phone";
-          phone.rwb_label_name = "";
-          phone.editable = false;
-        }
-        if (journeyType) {
-          phone.hide_remove_btn = true;
-        }
-        newFileds.push(phone);
-        newFieldsArray.push(phone.logical_field_name);
-      }
-    });
+    const thunk = getFields(mockStages, phoneSelector);
+    const result = thunk(dispatch);
 
-    if (newFieldsArray.length > 0 && phoneSelector.fields[0] !== "home_phone_number_rwb") {
-      dispatch(fieldErrorAction.getMandatoryFields(newFieldsArray));
-      dispatch(
-        stagesAction.removeAddToggleField({
-          removeFields: [],
-          newFields: newFieldsArray,
-          value: ""
-        })
-      );
-    }
+    expect(result).toEqual([
+      {
+        logical_field_name: "mobile_number",
+        component_type: "Phone",
+        rwb_label_name: "",
+        editable: false,
+        hide_remove_btn: true,
+      },
+    ]);
 
-    return newFileds;
-  };
-};
+    expect(dispatch).toHaveBeenCalledWith(
+      fieldErrorAction.getMandatoryFields(["mobile_number"])
+    );
+
+    expect(dispatch).toHaveBeenCalledWith(
+      stagesAction.removeAddToggleField({
+        removeFields: [],
+        newFields: ["mobile_number"],
+        value: "",
+      })
+    );
+  });
+
+  it("should not dispatch actions when field is home_phone_number_rwb", () => {
+    (getUrl.getJourneyType as jest.Mock).mockReturnValue(null);
+
+    const phoneSelector = {
+      fields: ["home_phone_number_rwb"],
+    };
+
+    const thunk = getFields(mockStages, phoneSelector);
+    const result = thunk(dispatch);
+
+    expect(result).toEqual([
+      {
+        logical_field_name: "home_phone_number",
+        component_type: "Phone",
+        rwb_label_name: "",
+        editable: false,
+      },
+    ]);
+
+    expect(dispatch).not.toHaveBeenCalledWith(
+      fieldErrorAction.getMandatoryFields(expect.anything())
+    );
+    expect(dispatch).not.toHaveBeenCalledWith(
+      stagesAction.removeAddToggleField(expect.anything())
+    );
+  });
+
+  it("should return empty array if no matching field is found", () => {
+    const invalidStages = [
+      {
+        stageId: "stageX",
+        stageInfo: {
+          fieldmetadata: {
+            data: {
+              stages: [],
+            },
+          },
+        },
+      },
+    ];
+
+    const phoneSelector = {
+      fields: ["mobile_number_rwb"],
+    };
+
+    const thunk = getFields(invalidStages as any, phoneSelector);
+    const result = thunk(dispatch);
+
+    expect(result).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+});
