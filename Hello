@@ -1,166 +1,478 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import Number from '../Number'; // Adjust path as needed
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import { IField } from '@/utils/types';
-import { getAddressDetails, validateAccountNumber } from '@/utils/fieldValidation';
+import { useEffect, useState } from "react";
+import "./thank-you.scss";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import thankyouData from "../../../assets/_json/thankyou.json";
+import { useSelector, useDispatch } from "react-redux";
+import { getUrl } from "../../../utils/common/change.utils";
+import trackEvents from "../../../services/track-events";
+import {
+  redirectingToIbanking,
+  activateDigitalCard,
+} from "../../../services/common-service";
+import Model from "../../../shared/components/model/model";
+import PopupModel from "../../../shared/components/popup-model/popup-model";
+import ThankYouCASA from "./thankyou-casa";
+import ThankYouCC from "./thankyou-cc";
+//import ThankYouPL from "./thankyou-pl";
+import CCWithoutActivation from "./cc-without-activation";
+import gaTrackEvents from "../../../services/ga-track-events";
+import CCActivationSucess from "./cc-activation-success";
+import ThankyouError from "./thankyou-error";
+import { useNavigate } from "react-router-dom";
+import ThankYouUpload from "./thankyou-upload";
+import { store } from "../../../utils/store/store";
 
-jest.mock('@/utils/fieldValidation', () => ({
-  getAddressDetails: jest.fn(),
-  validateAccountNumber: jest.fn()
-}));
+const ThankYou = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  /*istanbul ignore next */
+  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+  //const plProducts = app?.products.filter((product: any) => product?.product_category === 'PL');
+  const applicationJourney = useSelector(
+    (state: StoreModel) => state.stages.journeyType
+  );
+  const otpSuccessSelector = useSelector(
+    (state: StoreModel) => state.stages.otpSuccess
+  );
+  const thankyou: KeyWithAnyModel = thankyouData;
+  //const [isFunding, setIsFunding] = useState(false);
+  const applicationReferenceNo = getUrl.getChannelRefNo().applicationRefNo || stageSelector[0].stageInfo.application.application_reference;
+  const [applicationDetails, setApplicationDetails] = useState({
+    productCategory: [],
+    productName: [],
+    acct_details: [],
+    account_number: "",
+    thankyouProp: "NSTP",
+    accountNum: "",
+    thankyouText: "Common",
+    thankyouFeedback: "Feedback",
+    feedbackUrl: "",
+    isStp: false,
+    loanTenureMonths: "",
+    approvedLoan: 0,
+    productType: [],
+    feeAmount: "",
+    card_no: "",
+    cardNumber: "",
+    cardName: "",
+    productSequenceNo: [],
+  });
+  const saProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "SA");
+  const caProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "CA");
+  const tdProducts = applicationDetails?.productCategory?.filter((product:any)=> product === "TD");
+  const [enableActivation, setEnableActivation] = useState<boolean>(false);
+  const [showPlatinum, setShowPlatinum] = useState<boolean>(false);
+  const [isCampaignBenefits, setIsCampaignBenefits] = useState<boolean>(false);
+  const [
+    showContinueWithoutActivationMsg,
+    setShowContinueWithoutActivationMsg,
+  ] = useState<boolean>(false);
+  const [continueWithoutActivationUI, setContinueWithoutActivationUI] =
+    useState(false);
+  const [cardActivationSuccessUI, setCardActivationSuccessUI] = useState(false);
+  const [showErrorUI, setShowerrorUI] = useState(false);
+  useEffect(() => {
+    setApplicationDetails((prevValue) => {
+      if (
+        stageSelector &&
+        stageSelector[0].stageInfo && stageSelector[0].stageInfo.products &&
+        stageSelector[0].stageInfo.products.length >= 1
+      ) {
+        prevValue.productCategory =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_category);
+        prevValue.productName = stageSelector[0].stageInfo.products.map((product:any)=> product.name);
+        prevValue.productSequenceNo =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_sequence_number);
+        prevValue.productType =
+          stageSelector[0].stageInfo.products.map((product:any)=> product.product_type);
+        if (
+          stageSelector[0].stageInfo.products[0].acct_details &&
+          stageSelector[0].stageInfo.products[0].acct_details.length >= 1
+        ) {
+          prevValue.acct_details =
+            stageSelector[0].stageInfo.products[0].acct_details;
+          prevValue.account_number =
+            stageSelector[0].stageInfo.products[0].acct_details[0].account_number;
+          prevValue.card_no =
+            stageSelector[0].stageInfo.products[0].acct_details[0].card_no;
+        }
+      }
+      prevValue.thankyouProp = "NSTP";
+      if (
+        prevValue.acct_details &&
+        prevValue.acct_details[0] &&
+        prevValue.account_number
+      ) {
+        prevValue.thankyouProp = "STP";
+        prevValue.accountNum = prevValue.account_number;
+      }
+      if (
+        prevValue.acct_details &&
+        prevValue.acct_details[0] &&
+        prevValue.card_no
+      ) {
+        prevValue.thankyouProp = "STP";
+        prevValue.cardNumber = prevValue.card_no;
+      }
+      prevValue.isStp = prevValue.thankyouProp === "STP" ? true : false;
+      prevValue.feedbackUrl =
+        thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+        thankyou[prevValue.thankyouFeedback]["casa"] +
+        thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+        applicationReferenceNo!;
 
-const mockStore = configureStore([]);
-const setup = (fieldOverrides: Partial<IField> = {}, storeOverrides = {}) => {
-  const defaultField: IField = {
-    id: 'postalCode',
-    fieldType: 'number',
-    displayName: 'Postal Code',
-    tooltip: '',
-    subText: '',
-    placeholder: 'Enter postal code',
-    length: 6,
-    isDisabled: false,
-    dependentField: '',
-    dependentValue: '',
-    errorMessage: 'Invalid postal code',
-    value: '',
-    isOptional: false,
-    ...fieldOverrides,
+      prevValue = setSTPData(prevValue);
+      if (prevValue.isStp) {
+        if (prevValue.productCategory[0] === "CC"
+        && (prevValue.productCategory[1] === "CA"
+        || prevValue.productCategory[1] === "SA"
+        ||prevValue.productCategory[0] ==="SA"
+        || prevValue.productCategory[0] === "CC")) {
+          prevValue.thankyouText="CCSTP"
+          
+          if (stageSelector[0].stageInfo.applicants) {
+            if (stageSelector[0].stageInfo.applicants.embossed_name_a_1) {
+              prevValue.cardName =
+                stageSelector[0].stageInfo.applicants.embossed_name_a_1.toUpperCase();
+            }
+            if (prevValue.card_no) {
+              prevValue.cardNumber = prevValue.card_no;
+            }
+          }
+        } 
+        // else if (prevValue.productCategory[1] === "PL") {
+        //   if (stageSelector && stageSelector[0].stageInfo) {
+        //     if (stageSelector[0].stageInfo.products.length >= 1) {
+        //       prevValue.productType =
+        //         stageSelector[0].stageInfo.products[0].product_type;
+        //       if (
+        //         stageSelector[0].stageInfo.products[0].offer_details &&
+        //         stageSelector[0].stageInfo.products[0].offer_details[0].fees
+        //       )
+        //         prevValue.feeAmount =
+        //           stageSelector[0].stageInfo.products[0].offer_details[0].fees[0].fee_amount;
+        //       setIsCampaignBenefits(
+        //         thankyou.CCPL.FeeFreeCampaignCode.indexOf(
+        //           stageSelector[0].stageInfo.products[0].campaign
+        //         ) !== -1
+        //       );
+        //       if (stageSelector[0].stageInfo.products[0].acct_details) {
+        //         setShowPlatinum(
+        //           stageSelector[0].stageInfo.products[0].acct_details.length > 1
+        //         );
+        //       }
+        //     }
+        //     if (stageSelector[0].stageInfo.applicants) {
+        //       if (stageSelector[0].stageInfo.applicants.loan_tenor_a_1)
+        //         prevValue.loanTenureMonths =
+        //           stageSelector[0].stageInfo.applicants.loan_tenor_a_1;
+        //       if (
+        //         stageSelector[0].stageInfo.applicants.required_loan_amount_a_1
+        //       )
+        //         prevValue.approvedLoan =
+        //           stageSelector[0].stageInfo.applicants.required_loan_amount_a_1;
+        //       let auth_mode =
+        //         stageSelector[0].stageInfo.applicants["auth_mode_a_1"] || "";
+        //       let activate = !(
+        //         applicationJourney === "NTB" && auth_mode[1] === "N"
+        //       );
+              
+        //       setEnableActivation(activate);
+        //     }
+        //   }
+        // }
+      }
+      return { ...prevValue };
+    });
+    /*istanbul ignore next */
+    if (stageSelector[0] && stageSelector[0].stageId && getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload) {
+      gaTrackEvents.pageView(stageSelector[0].stageId);
+    }
+    /* istanbul ignore else */
+    if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
+    trackEvents.triggerAdobeEvent("formSubmit");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (otpSuccessSelector) {
+      activateCard();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpSuccessSelector]);
+  const setSTPData = (prevValue: any) => {
+    if (prevValue.isStp && prevValue.productCategory) {
+      if (prevValue.productCategory[0] === "CC"
+        && (prevValue.productCategory[1] === "CA"
+        || prevValue.productCategory[1] === "SA"
+        ||prevValue.productCategory[0] ==="SA"
+        || prevValue.productCategory[0] === "CC")) {
+        prevValue.feedbackUrl =
+          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+          thankyou[prevValue.thankyouFeedback]["cc"] +
+          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+          applicationReferenceNo!;
+      } 
+      else if (prevValue.productCategory[1] === "PL") {
+        prevValue.feedbackUrl =
+          thankyou[prevValue.thankyouFeedback]["url_prefix"] +
+          thankyou[prevValue.thankyouFeedback]["pl"] +
+          thankyou[prevValue.thankyouFeedback]["url_suffix"] +
+          applicationReferenceNo!;
+      }
+    }
+    return prevValue;
   };
 
-  const store = mockStore({
-    stage: 'stage1',
-    userInputs: {
-      stage1: {
-        field1: 'value1',
-        postalCode: '',
-      },
-    },
-    errors: {
-      stage1: {
-        postalCode: false,
-      },
-    },
-    ...storeOverrides,
-  });
+  const submitForm = (event:React.FormEvent<EventTarget>) => {
+    if (
+      stageSelector &&
+      (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM")
+    ) {
+      goToIBanking(event);
+    } else {
+      window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
+    }
+    event.preventDefault();
+  };
 
-  render(
-    <Provider store={store}>
-      <Number field={defaultField} />
-    </Provider>
+  const continueWithoutActivation = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(true);
+  };
+  const showContinuePopup = (event: React.FormEvent<EventTarget>) => {
+    setShowContinueWithoutActivationMsg(true);
+    event.preventDefault();
+  };
+  const handlePopupBackButton = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(false);
+  };
+  const showOTPPopup = () => {
+    navigate("/otp");
+  };
+  const goToIBanking = (event: React.FormEvent<EventTarget>) => {
+    if (getUrl.getParameterByName("source") === "scm") {
+      //Ibanking redirection for app
+      window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
+    }  else if(getUrl.getUpdatedStage().ccplChannel=== "MBNK" || getUrl.getParameterByName("channel") === "MBNK") {
+      const redirectUrl =  `${process.env.REACT_APP_IBANKING_SC_MOBILE_TRANSFER}`;
+      window.location.href = redirectUrl;
+    }else {
+      redirectingToIbanking();
+    }
+    event.preventDefault();
+  };
+  const activateCard = () => {
+    setShowContinueWithoutActivationMsg(false);
+    setContinueWithoutActivationUI(false);
+    setShowerrorUI(false);
+    dispatch(activateDigitalCard(applicationDetails)).then((result: any) => {
+      if (result.status && result.status.toUpperCase() === "SUCCESS") {
+        setCardActivationSuccessUI(true);
+      } else {
+        setShowerrorUI(true);
+      }
+    });
+  };
+  return (
+    <>
+      {applicationDetails && (
+        <form data-testid="form" className="form">
+          <div data-testid="app thankyou" className="app thankyou">
+            <div  data-testid="app__body" className="app__body">
+              <div className="app__right">
+                <div className="thankyou__container">
+                  {!showErrorUI &&
+                    !continueWithoutActivationUI &&
+                    !cardActivationSuccessUI && (
+                      <>
+                      {(getUrl.getParameterByName("auth") === "upload" || store.getState().stages.isDocumentUpload) &&(
+                          <ThankYouUpload
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          submitForm={submitForm}
+                        />
+                        )}
+                        {(caProducts.length ||
+                          saProducts.length) && (
+                          <ThankYouCASA
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                          />
+                        )}
+                        {/* {applicationDetails.productCategory[1] === "CC" && (
+                          <ThankYouCC
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                            activateCard={activateCard}
+                            showContinuePopup={showContinuePopup}
+                            showOTPPopup={showOTPPopup}
+                          />
+                        )} */}
+                        {/* {applicationDetails.productCategory[1] === "PL" && (
+                          <ThankYouPL
+                            applicationDetails={applicationDetails}
+                            thankyou={thankyou}
+                            applicationReferenceNo={applicationReferenceNo}
+                            submitForm={submitForm}
+                            enableActivation={enableActivation}
+                            showPlatinum={showPlatinum}
+                            isCampaignBenefits={isCampaignBenefits}
+                          />
+                        )} */}
+                        {showContinueWithoutActivationMsg && (
+                          <PopupModel displayPopup={true}>
+                            <Model
+                              name="CCThankYou"
+                              handlebuttonClick={handlePopupBackButton}
+                              handleContinueWithoutActivation={
+                                continueWithoutActivation
+                              }
+                            />
+                          </PopupModel>
+                        )}
+                      </>
+                    )}
+                  {applicationDetails.productCategory[0] === "CC" && (
+                    <>
+                      {continueWithoutActivationUI && (
+                        <CCWithoutActivation
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          goToIBanking={goToIBanking}
+                        />
+                      )}
+                      {cardActivationSuccessUI && (
+                        <CCActivationSucess
+                          applicationDetails={applicationDetails}
+                          thankyou={thankyou}
+                          applicationReferenceNo={applicationReferenceNo}
+                          goToIBanking={goToIBanking}
+                        />
+                      )}
+                    </>
+                  )}
+                  {showErrorUI && (
+                    <ThankyouError
+                      applicationDetails={applicationDetails}
+                      thankyou={thankyou}
+                      applicationReferenceNo={applicationReferenceNo}
+                      goToIBanking={goToIBanking}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      )}
+    </>
   );
-
-  return { store };
 };
 
-describe('Number Component', () => {
+export default ThankYou;
+
+
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
+import {  useSelector } from "react-redux";
+import { act } from "react-dom/test-utils";
+import ThankYou from "./thank-you"
+
+ 
+jest.autoMockOff();
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+jest.mock("@lottiefiles/react-lottie-player", () => ({
+  __esModule: true,
+}));
+ 
+jest.mock("../../../services/track-events", () => ({
+  __esModule: true,
+  default: {
+    triggerAdobeEvent: jest.fn(),
+  },
+}));
+
+jest.mock("./thankyou-cc", () => {
+  const mockSubmitForm = jest.fn();
+  return jest.fn(({ submitForm = mockSubmitForm }: { submitForm: jest.Mock }) => (
+    <button onClick={submitForm}>Submit Form</button>
+  ));})
+ 
+jest.mock("../../../services/ga-track-events", () => ({
+  __esModule: true,
+  default: {
+    pageView: jest.fn(),
+  },
+}));
+ 
+jest.mock("./thankyou-cc", () => jest.fn(() => <div>ThankYouCC Mock</div>));
+jest.mock("./thankyou-error", () => jest.fn(() => <div>ThankYouError Mock</div>));
+ 
+afterEach(() => {
+  jest.resetAllMocks();
+  cleanup();
+});
+ 
+describe("ThankYou Component Tests", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+  (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.stages.stages")) {
+        return [
+          {
+            stageId: "stage-1",
+            stageInfo: {
+              application: {
+                application_reference: "APP123",
+              },
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: "001",
+                  product_type: "CARD",
+                  acct_details: [
+                    {
+                      account_number: "ACC123",
+                      card_no: "CARD123",
+                    },
+                  ],
+                },
+              ],
+              applicants: {
+                embossed_name_a_1: "John Doe",
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ];
+      }
+      return null;
+    });
   });
-
-  it('renders postal code input and calls getAddressDetails on valid input', async () => {
-    (getAddressDetails as jest.Mock).mockResolvedValue({
-      city: 'Mumbai',
-      state: 'MH',
+ it("dispatches GA events and triggers tracking on load", async () => {
+    const mockTrackEvents = require("../../../services/track-events").default;
+    const mockGATrackEvents = require("../../../services/ga-track-events").default;
+ 
+    await act(async () => {
+      render(<ThankYou />);
     });
-
-    setup({ id: 'postalCode', fieldType: 'number', length: 6 });
-
-    const input = screen.getByPlaceholderText('Enter postal code');
-    fireEvent.change(input, { target: { value: '400001' } });
-
-    await waitFor(() => {
-      expect(getAddressDetails).toHaveBeenCalledWith('400001');
-    });
+ 
+    expect(mockGATrackEvents.pageView).toHaveBeenCalledWith("stage-1");
+    expect(mockTrackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
   });
-
-  it('renders account number field and calls validateAccountNumber on valid input', async () => {
-    (validateAccountNumber as jest.Mock).mockResolvedValue({
-      isValid: true,
-    });
-
-    setup({ id: 'accountNumber', fieldType: 'number', length: 10 });
-
-    const input = screen.getByPlaceholderText('Enter postal code');
-    fireEvent.change(input, { target: { value: '1234567890' } });
-
-    await waitFor(() => {
-      expect(validateAccountNumber).toHaveBeenCalledWith('1234567890');
-    });
-  });
-
-  it('shows error for invalid postal code', async () => {
-    (getAddressDetails as jest.Mock).mockResolvedValue(undefined);
-
-    setup({ id: 'postalCode' });
-
-    const input = screen.getByPlaceholderText('Enter postal code');
-    fireEvent.change(input, { target: { value: '123' } });
-
-    await waitFor(() => {
-      expect(getAddressDetails).not.toHaveBeenCalled();
-    });
-
-    // Simulate Redux error state
-    const storeWithError = mockStore({
-      stage: 'stage1',
-      userInputs: {
-        stage1: {
-          postalCode: '123',
-        },
-      },
-      errors: {
-        stage1: {
-          postalCode: true,
-        },
-      },
-    });
-
-    render(
-      <Provider store={storeWithError}>
-        <Number field={{ id: 'postalCode', fieldType: 'number', errorMessage: 'Invalid postal code' } as IField} />
-      </Provider>
-    );
-
-    expect(await screen.findByText('Invalid postal code')).toBeInTheDocument();
-  });
-
-  it('does not render field if dependentField does not match dependentValue', () => {
-    const store = mockStore({
-      stage: 'stage1',
-      userInputs: {
-        stage1: {
-          anotherField: 'NO',
-        },
-      },
-      errors: {
-        stage1: {},
-      },
-    });
-
-    const { container } = render(
-      <Provider store={store}>
-        <Number field={{
-          id: 'dependentFieldTest',
-          fieldType: 'number',
-          dependentField: 'anotherField',
-          dependentValue: 'YES',
-        } as IField} />
-      </Provider>
-    );
-
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it('renders subtext and tooltip if provided', () => {
-    setup({
-      subText: 'This is a helper text',
-      tooltip: 'This is a tooltip',
-    });
-
-    expect(screen.getByText('This is a helper text')).toBeInTheDocument();
-    expect(screen.getByLabelText('This is a tooltip')).toBeInTheDocument();
-  });
+ 
 });
